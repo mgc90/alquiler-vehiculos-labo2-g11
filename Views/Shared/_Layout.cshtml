@@ -1,31 +1,35 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="es">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>@ViewData["Title"] - alquiler_vehiculos_g11</title>
-    <script type="importmap"></script>
+    <title>@ViewData["Title"] - Alquiler de vehículos</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
     <link rel="stylesheet" href="~/alquiler_vehiculos_g11.styles.css" asp-append-version="true" />
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">alquiler_vehiculos_g11</a>
-                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
-                        aria-expanded="false" aria-label="Toggle navigation">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">Alquiler de vehículos</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-navigation"
+                        aria-controls="main-navigation" aria-expanded="false" aria-label="Mostrar navegación">
                     <span class="navbar-toggler-icon"></span>
                 </button>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-                        </li>
+                <div class="collapse navbar-collapse" id="main-navigation">
+                    <ul class="navbar-nav">
+                        <li class="nav-item"><a class="nav-link" asp-controller="Clientes" asp-action="Index">Clientes</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="CategoriasVehiculo" asp-action="Index">Categorías</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Vehiculos" asp-action="Index">Vehículos</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Alquileres" asp-action="Index">Alquileres</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Pagos" asp-action="Index">Pagos</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Imagenes" asp-action="Index">Imágenes</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Usuarios" asp-action="Index">Usuarios</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Auditoria" asp-action="Index">Auditoría</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Informes" asp-action="Index">Informes</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Perfil" asp-action="Index">Mi perfil</a></li>
+                        <li class="nav-item"><a class="nav-link" asp-controller="Acceso" asp-action="Login">Acceso</a></li>
                     </ul>
                 </div>
             </div>
@@ -36,11 +40,8 @@
             @RenderBody()
         </main>
     </div>
-
     <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2026 - alquiler_vehiculos_g11 - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
-        </div>
+        <div class="container">&copy; 2026 - Sistema de gestión de alquiler de vehículos</div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>

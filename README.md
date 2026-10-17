@@ -62,7 +62,7 @@ Usuario: Id, Email, PasswordHash, Nombre, Apellido, Avatar, Rol (Admin / Emplead
 Cliente: Id, Dni, Nombre, Apellido, FechaNacimiento, Telefono, Email, NumeroLicencia, VencimientoLicencia, Activo.
 CategoriaVehiculo: Id, Nombre, Descripcion, PrecioDiario, DepositoGarantia, Activa.
 Vehiculo: Id, CategoriaVehiculoId, Patente, Marca, Modelo, KilometrajeActual, EstadoOperativo (Habilitado / Mantenimiento / Baja).
-Alquiler: Id, ClienteId, VehiculoId, CreadoPorUsuarioId, CerradoPorUsuarioId, DevolucionPrevista, EntregaReal, DevolucionReal, PrecioAcordado, Observaciones, Multa, ImporteTotal, Estado (Reservado / EnCurso / Finalizado / Cancelado).
+Alquiler: Id, ClienteId, VehiculoId, CreadoPorUsuarioId, CerradoPorUsuarioId, EntregaPrevista, DevolucionPrevista, EntregaReal, DevolucionReal, PrecioAcordado, Observaciones, Multa, ImporteTotal, Estado (Reservado / EnCurso / Finalizado / Cancelado).
 Pago: Id, AlquilerId, CreadoPorUsuarioId, AnuladoPorUsuarioId, Fecha, FechaAnulacion, Importe, Tipo (Seña / Parcial / Total / Recargo / Multa), MedioPago, Estado (Vigente / Anulado).
 Imagen: Id, idVehiculo, titulo, url, descripción, idAlquiler(nullable por daños)
 
