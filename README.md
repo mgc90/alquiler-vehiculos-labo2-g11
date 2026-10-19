@@ -10,6 +10,17 @@ Christian Villegas - villegaschristian16@gmail.com
 Mauricio Barca - [ingresar Mail]
 URL Repositorio : [Ingresar Link]
 
+Puesta en Marcha (Desarrollo Local)
+Requisitos: .NET 10 SDK y MySQL/MariaDB en localhost (por defecto: usuario root sin contraseña, puerto 3306).
+La cadena de conexión vive en appsettings.json (base de datos: alquiler_vehiculos). Cada desarrollador puede sobrescribirla en appsettings.Development.json.
+Para crear las tablas por primera vez: dotnet ef database update
+Para ejecutar la aplicación: dotnet run --launch-profile http (http://localhost:5119)
+
+Credenciales de acceso (usuarios seed)
+Al iniciar la aplicación, el seeder (Data/DatosIniciales.cs) crea los roles y un usuario por rol. Solo se crean si no existen (idempotente):
+Administrador: admin@drivecontrol.com / Admin123!
+Empleado: empleado@drivecontrol.com / Empleado123!
+
 Descripción de la Problemática: 
 Las agencias de alquiler de vehículos que operan de forma manual o mediante planillas descentralizadas enfrentan dificultades críticas de gestión:
 Solapamiento de reservas: Riesgo de alquilar el mismo vehículo a dos clientes en rangos de fechas superpuestos o asignar unidades en mantenimiento.
