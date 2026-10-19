@@ -1,1 +1,42 @@
+@model IEnumerable<UsuarioListaViewModel>
+@{
+    ViewData["Title"] = "Usuarios";
+}
+
 <h1>Usuarios</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Nuevo usuario</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Apellido y nombre</th>
+            <th>Email</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var usuario in Model)
+        {
+            <tr>
+                <td>@usuario.Apellido, @usuario.Nombre</td>
+                <td>@usuario.Email</td>
+                <td>@usuario.Rol</td>
+                <td>@(usuario.Activo ? "Activo" : "Inactivo")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@usuario.Id">Detalle</a> |
+                    <a asp-action="Edit" asp-route-id="@usuario.Id">Editar</a>
+                    @if (usuario.Activo)
+                    {
+                        <text> | </text>
+                        <a asp-action="Delete" asp-route-id="@usuario.Id">Dar de baja</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

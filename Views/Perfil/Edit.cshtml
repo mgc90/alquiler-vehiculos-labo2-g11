@@ -1,1 +1,44 @@
-<h1>Editar perfil</h1>
+@model PerfilViewModel
+@{
+    ViewData["Title"] = "Editar mis datos";
+}
+
+<h1>Editar mis datos</h1>
+
+<div class="row">
+    <div class="col-md-5">
+        <form asp-action="Edit" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <div class="mb-3">
+                <label asp-for="Nombre" class="form-label"></label>
+                <input asp-for="Nombre" class="form-control" />
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Apellido" class="form-label"></label>
+                <input asp-for="Apellido" class="form-control" />
+                <span asp-validation-for="Apellido" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label"></label>
+                <input asp-for="Email" class="form-control" />
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+            <div class="mb-3">
+                @if (!string.IsNullOrEmpty(Model.Avatar))
+                {
+                    <img src="~/@Model.Avatar" alt="Avatar" class="rounded-circle d-block mb-2" style="width: 96px; height: 96px; object-fit: cover;" />
+                }
+                <label asp-for="ArchivoAvatar" class="form-label"></label>
+                <input asp-for="ArchivoAvatar" type="file" accept=".jpg,.jpeg,.png,.webp" class="form-control" />
+                <span asp-validation-for="ArchivoAvatar" class="text-danger"></span>
+            </div>
+            <button type="submit" class="btn btn-primary">Guardar</button>
+            <a asp-action="Index" class="btn btn-secondary">Volver</a>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

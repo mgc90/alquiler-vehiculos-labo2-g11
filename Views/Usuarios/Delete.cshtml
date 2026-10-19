@@ -1,1 +1,27 @@
-<h1>Eliminar usuario</h1>
+@model ApplicationUser
+@{
+    ViewData["Title"] = "Dar de baja usuario";
+}
+
+<h1>Dar de baja usuario</h1>
+
+<div class="alert alert-warning">
+    La baja es lógica: el usuario no se elimina, queda inactivo y no podrá ingresar al sistema.
+</div>
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-3">Nombre</dt>
+        <dd class="col-sm-9">@Model.Nombre @Model.Apellido</dd>
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@Model.Email</dd>
+        <dt class="col-sm-3">Rol</dt>
+        <dd class="col-sm-9">@ViewBag.Rol</dd>
+    </dl>
+
+    <form asp-action="Delete" method="post">
+        <input type="hidden" asp-for="Id" />
+        <button type="submit" class="btn btn-danger">Confirmar baja</button>
+        <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>

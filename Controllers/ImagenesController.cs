@@ -1,8 +1,10 @@
 using alquiler_vehiculos_g11.Models;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace alquiler_vehiculos_g11.Controllers;
 
+[Authorize]
 public class ImagenesController : Controller
 {
     [HttpGet]

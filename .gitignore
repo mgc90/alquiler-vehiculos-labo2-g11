@@ -486,3 +486,6 @@ Consigna.md
 AGENTS.md
 
 .vscode/
+
+# Archivos subidos en runtime (avatares, imágenes de vehículos)
+wwwroot/uploads/

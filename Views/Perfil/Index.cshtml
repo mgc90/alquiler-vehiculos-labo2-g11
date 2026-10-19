@@ -1,1 +1,36 @@
+@model ApplicationUser
+@{
+    ViewData["Title"] = "Mi perfil";
+}
+
 <h1>Mi perfil</h1>
+
+@if (TempData["Mensaje"] is string mensaje)
+{
+    <div class="alert alert-success">@mensaje</div>
+}
+
+<div class="card" style="max-width: 480px;">
+    <div class="card-body">
+        @if (!string.IsNullOrEmpty(Model.Avatar))
+        {
+            <img src="~/@Model.Avatar" alt="Avatar" class="rounded-circle mb-3" style="width: 96px; height: 96px; object-fit: cover;" />
+        }
+        else
+        {
+            <p class="text-muted">Sin avatar.</p>
+        }
+
+        <dl class="row">
+            <dt class="col-sm-4">Nombre</dt>
+            <dd class="col-sm-8">@Model.Nombre @Model.Apellido</dd>
+            <dt class="col-sm-4">Email</dt>
+            <dd class="col-sm-8">@Model.Email</dd>
+            <dt class="col-sm-4">Rol</dt>
+            <dd class="col-sm-8">@ViewBag.Rol</dd>
+        </dl>
+
+        <a asp-action="Edit" class="btn btn-primary">Editar datos</a>
+        <a asp-action="CambiarContrasena" class="btn btn-secondary">Cambiar contraseña</a>
+    </div>
+</div>

@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace alquiler_vehiculos_g11.Controllers;
 
+[Authorize]
 public class InformesController : Controller
 {
     [HttpGet]

@@ -12,11 +12,11 @@ public class Pago
 
     public int CreadoPorUsuarioId { get; set; }
 
-    public Usuario? CreadoPorUsuario { get; set; }
+    public ApplicationUser? CreadoPorUsuario { get; set; }
 
     public int? AnuladoPorUsuarioId { get; set; }
 
-    public Usuario? AnuladoPorUsuario { get; set; }
+    public ApplicationUser? AnuladoPorUsuario { get; set; }
 
     public DateTime Fecha { get; set; }
 

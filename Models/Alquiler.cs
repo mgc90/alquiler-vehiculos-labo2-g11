@@ -16,11 +16,11 @@ public class Alquiler
 
     public int CreadoPorUsuarioId { get; set; }
 
-    public Usuario? CreadoPorUsuario { get; set; }
+    public ApplicationUser? CreadoPorUsuario { get; set; }
 
     public int? CerradoPorUsuarioId { get; set; }
 
-    public Usuario? CerradoPorUsuario { get; set; }
+    public ApplicationUser? CerradoPorUsuario { get; set; }
 
     public DateTime EntregaPrevista { get; set; }
 

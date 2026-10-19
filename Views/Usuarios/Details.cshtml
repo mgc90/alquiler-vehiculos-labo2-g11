@@ -1,1 +1,24 @@
+@model ApplicationUser
+@{
+    ViewData["Title"] = "Detalle de usuario";
+}
+
 <h1>Detalle de usuario</h1>
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-3">Nombre</dt>
+        <dd class="col-sm-9">@Model.Nombre @Model.Apellido</dd>
+        <dt class="col-sm-3">Email</dt>
+        <dd class="col-sm-9">@Model.Email</dd>
+        <dt class="col-sm-3">Rol</dt>
+        <dd class="col-sm-9">@ViewBag.Rol</dd>
+        <dt class="col-sm-3">Estado</dt>
+        <dd class="col-sm-9">@(Model.Activo ? "Activo" : "Inactivo")</dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">Editar</a>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+</div>

@@ -2,6 +2,6 @@
 
 namespace alquiler_vehiculos_g11.Repositories;
 
-public interface IUsuarioRepository : IWriteRepository<Usuario>
+public interface IUsuarioRepository : IWriteRepository<ApplicationUser>
 {
 }
