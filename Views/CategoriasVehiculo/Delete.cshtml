@@ -1,1 +1,30 @@
-<h1>Eliminar categoría de vehículo</h1>
+@model alquiler_vehiculos_g11.Models.CategoriaVehiculo
+
+@{
+    ViewData["Title"] = "Desactivar Categoría";
+}
+
+<h2 class="text-danger">Desactivar Categoría</h2>
+<p class="lead">¿Está seguro de que desea desactivar esta categoría?</p>
+<hr />
+
+<div class="card border-danger shadow-sm col-md-6 mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Nombre</dt>
+            <dd class="col-sm-8">@Model.Nombre</dd>
+
+            <dt class="col-sm-4">Precio Diario</dt>
+            <dd class="col-sm-8">$@Model.PrecioDiario.ToString("N2")</dd>
+
+            <dt class="col-sm-4">Depósito Garantía</dt>
+            <dd class="col-sm-8">$@Model.DepositoGarantia.ToString("N2")</dd>
+        </dl>
+    </div>
+</div>
+
+<form asp-action="Delete" method="post">
+    <input type="hidden" asp-for="Id" />
+    <button type="submit" class="btn btn-danger">Confirmar Desactivación</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
