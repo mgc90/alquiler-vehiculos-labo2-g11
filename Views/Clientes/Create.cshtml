@@ -1,1 +1,66 @@
-<h1>Crear cliente</h1>
+@model Cliente
+
+@{
+    ViewData["Title"] = "Crear Cliente";
+}
+
+<h1>Ingresar nuevo cliente</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create" method="post">
+            <div class="form-group mb-3">
+                <label asp-for="Dni" class="control-label">Documento (DNI)</label>
+                <input asp-for="Dni" class="form-control"/>
+                <span asp-validation-for="Dni" class="text-danger"></span>
+            </div>
+            
+            <div class="form-group mb-3">
+                <label asp-for="Nombre" class="control-label">Nombre</label>
+                <input asp-for="Nombre" class="form-control"/>
+                <span asp-validation-for="Nombre" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Apellido" class="control-label">Apellido</label>
+                <input asp-for="Apellido" class="form-control"/>
+                <span asp-validation-for="Apellido" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="FechaNacimiento" class="control-label">Fecha de Nacimiento</label>
+                <input asp-for="FechaNacimiento" type="date" class="form-control"/>
+                <span asp-validation-for="FechaNacimiento" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Telefono" class="control-label">Teléfono de Contacto</label>
+                <input asp-for="Telefono" class="form-control"/>
+                <span asp-validation-for="Telefono" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="Email" class="control-label">Correo Electrónico</label>
+                <input asp-for="Email" type="email" class="form-control"/>
+                <span asp-validation-for="Email" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="NumeroLicencia" class="control-label">Numero de Licencia</label>
+                <input asp-for="NumeroLicencia" class="form-control"/>
+                <span asp-validation-for="NumeroLicencia" class="text-danger"></span>
+            </div>
+
+            <div class="form-group mb-3">
+                <label asp-for="VencimientoLicencia" class="control-label">Fecha de Vencimiento de la Licencia</label>
+                <input asp-for="VencimientoLicencia" type="date" class="form-control"/>
+                <span asp-validation-for="VencimientoLicencia" class="text-danger"></span>
+            </div>
+
+            <div class="form-group">
+                <button type="submit" class="btn btn-primary">Guardar</button>
+                <a asp-action="Index" class="btn btn-secondary">Volver</a>
+            </div>
+        </form>
+    </div>
+</div>

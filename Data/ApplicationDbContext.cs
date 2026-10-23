@@ -11,4 +11,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
         : base(options)
     {
     }
+
+    //Query filter
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<Cliente>()
+            .HasQueryFilter(c => !c.Activo);
+    }
 }

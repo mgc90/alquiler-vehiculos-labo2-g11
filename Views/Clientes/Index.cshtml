@@ -1,1 +1,50 @@
+@model IEnumerable<Cliente>
+@{
+    ViewData["Title"] = "Clientes";
+}
+
 <h1>Clientes</h1>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary">Crear Cliente</a>
+</p>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Apellido y nombre</th>
+            <th>Dni</th>
+            <th>Fecha de Nacimiento</th>
+            <th>Telefono</th>
+            <th>Email</th>
+            <th>Numero de Licencia</th>
+            <th>Fecha de Vencimiento de la Licencia</th>
+            <th>Estado</th>
+            <!--<th> Lista de Vehiculos alquilados por el cliente</th> -->
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (Cliente cliente in Model)
+        {
+            <tr>
+                <td>@cliente.Apellido, @cliente.Nombre</td>
+                <td>@cliente.Dni</td>
+                <td>@cliente.FechaNacimiento</td>
+                <td>@cliente.Telefono</td>
+                <td>@cliente.Email</td>
+                <td>@cliente.NumeroLicencia</td>
+                <td>@cliente.VencimientoLicencia</td>
+                <td>@(cliente.Activo ? "Activo" : "Inactivo")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@cliente.Id">Detalle</a> |
+                    <a asp-action="Edit" asp-route-id="@cliente.Id">Editar</a>
+                    @if (cliente.Activo)
+                    {
+                        <text> | </text>
+                        <a asp-action="Delete" asp-route-id="@cliente.Id">Dar de baja</a>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
