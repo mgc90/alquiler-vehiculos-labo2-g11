@@ -1,6 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using alquiler_vehiculos_g11.Validations;
 namespace alquiler_vehiculos_g11.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
 public class Cliente
 {
@@ -40,6 +41,10 @@ public class Cliente
 
     public bool Activo { get; set; } = true;
 
+
+    // EF Core ignora esta propiedad al generar la primer migración 
+    // En la siguiente etapa quitar el 'not mapped' y crear la tabla correspondiente.  
+    [NotMapped]
     public ICollection<Alquiler> Alquileres { get; set; } = new List<Alquiler>();
 
 }

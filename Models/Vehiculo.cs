@@ -20,7 +20,10 @@ public class Vehiculo
 
     public EstadoOperativoVehiculo EstadoOperativo { get; set; } = EstadoOperativoVehiculo.Habilitado;
 
-    public ICollection<Alquiler> Alquileres { get; set; } = new List<Alquiler>();
 
-    public ICollection<Imagen> Imagenes { get; set; } = new List<Imagen>();
+    //-----Tablas pendientes para la siguiente etapa-------
+
+    //public ICollection<Alquiler> Alquileres { get; set; } = new List<Alquiler>();
+
+    //public ICollection<Imagen> Imagenes { get; set; } = new List<Imagen>();
 }

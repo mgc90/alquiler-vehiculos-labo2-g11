@@ -12,12 +12,18 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     {
     }
 
+    // Tablas de Dominio - Exclusivas de la Etapa 1
+    public DbSet<Cliente> Clientes { get; set; } = null!;
+    public DbSet<CategoriaVehiculo> CategoriasVehiculo { get; set; } = null!;
+    public DbSet<Vehiculo> Vehiculos { get; set; } = null!;
+    
+
     //Query filter
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.Entity<Cliente>()
-            .HasQueryFilter(c => !c.Activo);
+            .HasQueryFilter(c => c.Activo); // Mostraba los clientes inactivos, ahora solo muestra los activos.
     }
 }
