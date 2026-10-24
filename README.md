@@ -32,7 +32,12 @@ Al ejecutar las migraciones e iniciar la aplicación por primera vez, el *seeder
 
 ### Requisitos Previos
 * **.NET 10 SDK**
-* **MySQL / MariaDB** ejecutándose en `localhost:3306` (por defecto: usuario `root` sin contraseña).
+* **MySQL / MariaDB** ejecutándose en `localhost:3306`.
+* **Herramienta Global de EF Core (`dotnet-ef`):** Necesaria para ejecutar las migraciones de Entity Framework Core. Si no la tienes instalada en tu equipo, ejecuta en la terminal:
+  ```bash
+  dotnet tool install --global dotnet-ef
+  ```
+  *(En caso de requerir actualización, puedes usar `dotnet tool update --global dotnet-ef`)*.
 
 ### Pasos para Ejecutar
 
@@ -42,8 +47,13 @@ Al ejecutar las migraciones e iniciar la aplicación por primera vez, el *seeder
    cd alquiler-vehiculos-labo2-g11
    ```
 
-2. **Configuración de la Base de Datos:**
-   La cadena de conexión apunta a la base `alquiler_vehiculos` en `appsettings.json`. Si necesitas modificar credenciales locales, puedes crear o editar el archivo `appsettings.Development.json`.
+2. **Configurar Credenciales Locales (User Secrets):**
+   Para evitar exponer credenciales o contraseñas locales en el repositorio remoto (`appsettings.json`), utilizamos el Administrador de Secretos de .NET:
+   ```bash
+   dotnet user-secrets init
+   dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=alquiler_vehiculos;User=root;Password=tu_contraseña;"
+   ```
+   *(Si tu usuario `root` local de MySQL no utiliza contraseña, puedes dejar `Password=;`)*.
 
 3. **Crear la Base de Datos y Tablas:**
    ```bash
@@ -52,7 +62,7 @@ Al ejecutar las migraciones e iniciar la aplicación por primera vez, el *seeder
 
 4. **Ejecutar la Aplicación:**
    ```bash
-   dotnet run --launch-profile http
+   dotnet run 
    ```
    Accede desde tu navegador a: [http://localhost:5119](http://localhost:5119)
 
