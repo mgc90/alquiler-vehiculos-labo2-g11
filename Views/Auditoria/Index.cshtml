@@ -1,1 +1,108 @@
+@model AuditoriaViewModel
+@{
+    ViewData["Title"] = "Auditoría";
+    var paginasAlquileres = (int)Math.Ceiling(Model.Alquileres.TotalRegistros / (double)Model.Alquileres.TamanioPagina);
+    var paginasPagos = (int)Math.Ceiling(Model.Pagos.TotalRegistros / (double)Model.Pagos.TamanioPagina);
+}
+
 <h1>Auditoría</h1>
+
+<form asp-action="Index" method="get">
+    <label for="usuarioId">Usuario</label>
+    <select id="usuarioId" name="usuarioId">
+        <option value="">Todos</option>
+        @foreach (var usuario in Model.Usuarios)
+        {
+            <option value="@usuario.Id" selected="@(Model.UsuarioId == usuario.Id)">
+                @usuario.Apellido, @usuario.Nombre (@usuario.Email)
+            </option>
+        }
+    </select>
+    <button type="submit">Filtrar</button>
+</form>
+
+<h2>Alquileres</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Alquiler</th>
+            <th>Cliente</th>
+            <th>Vehículo</th>
+            <th>Creado por</th>
+            <th>Cerrado por</th>
+            <th>Estado</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var alquiler in Model.Alquileres.Elementos)
+        {
+            <tr>
+                <td>#@alquiler.Id</td>
+                <td>@alquiler.Cliente?.Apellido, @alquiler.Cliente?.Nombre</td>
+                <td>@alquiler.Vehiculo?.Patente</td>
+                <td>@alquiler.CreadoPorUsuario?.Email</td>
+                <td>@alquiler.CerradoPorUsuario?.Email</td>
+                <td>@alquiler.Estado</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p>@Model.Alquileres.TotalRegistros alquiler(es)</p>
+@if (Model.Alquileres.Pagina > 1)
+{
+    <a asp-action="Index" asp-route-usuarioId="@Model.UsuarioId"
+       asp-route-paginaAlquileres="@(Model.Alquileres.Pagina - 1)"
+       asp-route-paginaPagos="@Model.Pagos.Pagina">Alquileres anteriores</a>
+}
+<span>Página @Model.Alquileres.Pagina de @Math.Max(1, paginasAlquileres)</span>
+@if (Model.Alquileres.Pagina < paginasAlquileres)
+{
+    <a asp-action="Index" asp-route-usuarioId="@Model.UsuarioId"
+       asp-route-paginaAlquileres="@(Model.Alquileres.Pagina + 1)"
+       asp-route-paginaPagos="@Model.Pagos.Pagina">Alquileres siguientes</a>
+}
+
+<h2>Pagos</h2>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Pago</th>
+            <th>Alquiler</th>
+            <th>Fecha</th>
+            <th>Importe</th>
+            <th>Tipo</th>
+            <th>Estado</th>
+            <th>Creado por</th>
+            <th>Anulado por</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var pago in Model.Pagos.Elementos)
+        {
+            <tr>
+                <td>#@pago.Id</td>
+                <td>#@pago.AlquilerId</td>
+                <td>@pago.Fecha.ToString("g")</td>
+                <td>@pago.Importe.ToString("C")</td>
+                <td>@pago.Tipo</td>
+                <td>@pago.Estado</td>
+                <td>@pago.CreadoPorUsuario?.Email</td>
+                <td>@pago.AnuladoPorUsuario?.Email</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p>@Model.Pagos.TotalRegistros pago(s)</p>
+@if (Model.Pagos.Pagina > 1)
+{
+    <a asp-action="Index" asp-route-usuarioId="@Model.UsuarioId"
+       asp-route-paginaAlquileres="@Model.Alquileres.Pagina"
+       asp-route-paginaPagos="@(Model.Pagos.Pagina - 1)">Pagos anteriores</a>
+}
+<span>Página @Model.Pagos.Pagina de @Math.Max(1, paginasPagos)</span>
+@if (Model.Pagos.Pagina < paginasPagos)
+{
+    <a asp-action="Index" asp-route-usuarioId="@Model.UsuarioId"
+       asp-route-paginaAlquileres="@Model.Alquileres.Pagina"
+       asp-route-paginaPagos="@(Model.Pagos.Pagina + 1)">Pagos siguientes</a>
+}

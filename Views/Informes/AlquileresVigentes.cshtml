@@ -1,1 +1,66 @@
-<h1>Alquileres vigentes</h1>
+@model InformeAlquileresVigentesViewModel
+@{
+    ViewData["Title"] = "Alquileres vigentes";
+    var totalPaginas = Model.Resultado is null
+        ? 0
+        : (int)Math.Ceiling(Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina);
+}
+
+<h1>Alquileres vigentes por período</h1>
+
+<form asp-action="AlquileresVigentes" method="get">
+    <label for="desde">Desde</label>
+    <input id="desde" name="desde" type="date" value="@Model.Desde?.ToString("yyyy-MM-dd")" />
+    <label for="hasta">Hasta</label>
+    <input id="hasta" name="hasta" type="date" value="@Model.Hasta?.ToString("yyyy-MM-dd")" />
+    <button type="submit">Buscar</button>
+</form>
+
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <p class="text-danger">@Model.Error</p>
+}
+
+@if (Model.Resultado is not null)
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Cliente</th>
+                <th>Vehículo</th>
+                <th>Entrega prevista</th>
+                <th>Devolución prevista</th>
+                <th>Estado</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var alquiler in Model.Resultado.Elementos)
+            {
+                <tr>
+                    <td>@alquiler.Cliente?.Apellido, @alquiler.Cliente?.Nombre</td>
+                    <td>@alquiler.Vehiculo?.Patente - @alquiler.Vehiculo?.Marca @alquiler.Vehiculo?.Modelo</td>
+                    <td>@alquiler.EntregaPrevista.ToString("d")</td>
+                    <td>@alquiler.DevolucionPrevista.ToString("d")</td>
+                    <td>@alquiler.Estado</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <p>@Model.Resultado.TotalRegistros alquiler(es)</p>
+    @if (Model.Resultado.Pagina > 1)
+    {
+        <a asp-action="AlquileresVigentes"
+           asp-route-desde="@Model.Desde?.ToString("yyyy-MM-dd")"
+           asp-route-hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
+           asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+    }
+    <span>Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
+    @if (Model.Resultado.Pagina < totalPaginas)
+    {
+        <a asp-action="AlquileresVigentes"
+           asp-route-desde="@Model.Desde?.ToString("yyyy-MM-dd")"
+           asp-route-hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
+           asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+    }
+}

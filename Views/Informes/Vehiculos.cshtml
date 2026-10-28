@@ -1,1 +1,59 @@
+@model InformeVehiculosViewModel
+@using alquiler_vehiculos_g11.Models.Enums
+@{
+    ViewData["Title"] = "Vehículos por estado";
+    var totalPaginas = (int)Math.Ceiling(Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina);
+}
+
 <h1>Vehículos por estado</h1>
+
+<form asp-action="Vehiculos" method="get">
+    <label for="estado">Estado operativo</label>
+    <select id="estado" name="estado">
+        <option value="">Todos</option>
+        @foreach (var estado in Enum.GetValues<EstadoOperativoVehiculo>())
+        {
+            <option value="@estado" selected="@(Model.Estado == estado)">@estado</option>
+        }
+    </select>
+    <button type="submit">Buscar</button>
+</form>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Patente</th>
+            <th>Marca</th>
+            <th>Modelo</th>
+            <th>Categoría</th>
+            <th>Estado operativo</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var vehiculo in Model.Resultado.Elementos)
+        {
+            <tr>
+                <td>@vehiculo.Patente</td>
+                <td>@vehiculo.Marca</td>
+                <td>@vehiculo.Modelo</td>
+                <td>@vehiculo.CategoriaVehiculo?.Nombre</td>
+                <td>@vehiculo.EstadoOperativo</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<p>@Model.Resultado.TotalRegistros vehículo(s)</p>
+@if (Model.Resultado.Pagina > 1)
+{
+    <a asp-action="Vehiculos"
+       asp-route-estado="@Model.Estado"
+       asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+}
+<span>Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
+@if (Model.Resultado.Pagina < totalPaginas)
+{
+    <a asp-action="Vehiculos"
+       asp-route-estado="@Model.Estado"
+       asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+}

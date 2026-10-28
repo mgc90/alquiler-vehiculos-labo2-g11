@@ -1,0 +1,47 @@
+@model InformeVehiculosCategoriaViewModel
+@{
+    ViewData["Title"] = "Vehículos por categoría";
+    var totalPaginas = (int)Math.Ceiling(Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina);
+}
+
+<h1>Vehículos por categoría</h1>
+<form asp-action="VehiculosPorCategoria" method="get">
+    <label for="categoriaVehiculoId">Categoría</label>
+    <select id="categoriaVehiculoId" name="categoriaVehiculoId">
+        <option value="">Todas las categorías</option>
+        @foreach (var categoria in Model.Categorias)
+        {
+            <option value="@categoria.Id" selected="@(Model.CategoriaVehiculoId == categoria.Id)">
+                @categoria.Nombre
+            </option>
+        }
+    </select>
+    <button type="submit">Buscar</button>
+</form>
+
+<table class="table">
+    <thead><tr><th>Patente</th><th>Marca</th><th>Modelo</th><th>Categoría</th></tr></thead>
+    <tbody>
+        @foreach (var vehiculo in Model.Resultado.Elementos)
+        {
+            <tr>
+                <td>@vehiculo.Patente</td>
+                <td>@vehiculo.Marca</td>
+                <td>@vehiculo.Modelo</td>
+                <td>@vehiculo.CategoriaVehiculo?.Nombre</td>
+            </tr>
+        }
+    </tbody>
+</table>
+<p>@Model.Resultado.TotalRegistros vehículo(s)</p>
+@if (Model.Resultado.Pagina > 1)
+{
+    <a asp-action="VehiculosPorCategoria" asp-route-categoriaVehiculoId="@Model.CategoriaVehiculoId"
+       asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+}
+<span>Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
+@if (Model.Resultado.Pagina < totalPaginas)
+{
+    <a asp-action="VehiculosPorCategoria" asp-route-categoriaVehiculoId="@Model.CategoriaVehiculoId"
+       asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+}

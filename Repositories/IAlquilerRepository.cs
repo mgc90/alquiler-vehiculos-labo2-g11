@@ -17,4 +17,10 @@ public interface IAlquilerRepository : IWriteRepository<Alquiler>
         DateTime hasta,
         int pagina,
         int tamanioPagina);
+
+    Task<ResultadoPaginado<Alquiler>> ObtenerQueFinalizanAsync(
+        DateTime desde,
+        DateTime hasta,
+        int pagina,
+        int tamanioPagina);
 }

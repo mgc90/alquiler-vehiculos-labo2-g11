@@ -154,6 +154,69 @@ namespace alquiler_vehiculos_g11.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Alquiler", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CerradoPorUsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ClienteId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreadoPorUsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("DevolucionPrevista")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("DevolucionReal")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("EntregaPrevista")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("EntregaReal")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("ImporteTotal")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Multa")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Observaciones")
+                        .HasColumnType("longtext");
+
+                    b.Property<decimal>("PrecioAcordado")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("VehiculoId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CerradoPorUsuarioId");
+
+                    b.HasIndex("ClienteId");
+
+                    b.HasIndex("CreadoPorUsuarioId");
+
+                    b.HasIndex("VehiculoId");
+
+                    b.ToTable("Alquileres");
+                });
+
             modelBuilder.Entity("alquiler_vehiculos_g11.Models.ApplicationUser", b =>
                 {
                     b.Property<int>("Id")
@@ -313,6 +376,88 @@ namespace alquiler_vehiculos_g11.Migrations
                     b.ToTable("Clientes");
                 });
 
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Imagen", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("AlquilerId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Descripcion")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Url")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("VehiculoId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlquilerId");
+
+                    b.HasIndex("VehiculoId");
+
+                    b.ToTable("Imagenes");
+                });
+
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Pago", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    MySqlPropertyBuilderExtensions.UseMySqlIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AlquilerId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("AnuladoPorUsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("CreadoPorUsuarioId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Estado")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("Fecha")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime?>("FechaAnulacion")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<decimal>("Importe")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MedioPago")
+                        .IsRequired()
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("Tipo")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AlquilerId");
+
+                    b.HasIndex("AnuladoPorUsuarioId");
+
+                    b.HasIndex("CreadoPorUsuarioId");
+
+                    b.ToTable("Pagos");
+                });
+
             modelBuilder.Entity("alquiler_vehiculos_g11.Models.Vehiculo", b =>
                 {
                     b.Property<int>("Id")
@@ -400,6 +545,84 @@ namespace alquiler_vehiculos_g11.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Alquiler", b =>
+                {
+                    b.HasOne("alquiler_vehiculos_g11.Models.ApplicationUser", "CerradoPorUsuario")
+                        .WithMany()
+                        .HasForeignKey("CerradoPorUsuarioId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("alquiler_vehiculos_g11.Models.Cliente", "Cliente")
+                        .WithMany()
+                        .HasForeignKey("ClienteId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("alquiler_vehiculos_g11.Models.ApplicationUser", "CreadoPorUsuario")
+                        .WithMany()
+                        .HasForeignKey("CreadoPorUsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("alquiler_vehiculos_g11.Models.Vehiculo", "Vehiculo")
+                        .WithMany("Alquileres")
+                        .HasForeignKey("VehiculoId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("CerradoPorUsuario");
+
+                    b.Navigation("Cliente");
+
+                    b.Navigation("CreadoPorUsuario");
+
+                    b.Navigation("Vehiculo");
+                });
+
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Imagen", b =>
+                {
+                    b.HasOne("alquiler_vehiculos_g11.Models.Alquiler", "Alquiler")
+                        .WithMany("Imagenes")
+                        .HasForeignKey("AlquilerId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("alquiler_vehiculos_g11.Models.Vehiculo", "Vehiculo")
+                        .WithMany()
+                        .HasForeignKey("VehiculoId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Alquiler");
+
+                    b.Navigation("Vehiculo");
+                });
+
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Pago", b =>
+                {
+                    b.HasOne("alquiler_vehiculos_g11.Models.Alquiler", "Alquiler")
+                        .WithMany("Pagos")
+                        .HasForeignKey("AlquilerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("alquiler_vehiculos_g11.Models.ApplicationUser", "AnuladoPorUsuario")
+                        .WithMany()
+                        .HasForeignKey("AnuladoPorUsuarioId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("alquiler_vehiculos_g11.Models.ApplicationUser", "CreadoPorUsuario")
+                        .WithMany()
+                        .HasForeignKey("CreadoPorUsuarioId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Alquiler");
+
+                    b.Navigation("AnuladoPorUsuario");
+
+                    b.Navigation("CreadoPorUsuario");
+                });
+
             modelBuilder.Entity("alquiler_vehiculos_g11.Models.Vehiculo", b =>
                 {
                     b.HasOne("alquiler_vehiculos_g11.Models.CategoriaVehiculo", "CategoriaVehiculo")
@@ -411,9 +634,21 @@ namespace alquiler_vehiculos_g11.Migrations
                     b.Navigation("CategoriaVehiculo");
                 });
 
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Alquiler", b =>
+                {
+                    b.Navigation("Imagenes");
+
+                    b.Navigation("Pagos");
+                });
+
             modelBuilder.Entity("alquiler_vehiculos_g11.Models.CategoriaVehiculo", b =>
                 {
                     b.Navigation("Vehiculos");
+                });
+
+            modelBuilder.Entity("alquiler_vehiculos_g11.Models.Vehiculo", b =>
+                {
+                    b.Navigation("Alquileres");
                 });
 #pragma warning restore 612, 618
         }

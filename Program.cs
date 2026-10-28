@@ -1,5 +1,6 @@
 using alquiler_vehiculos_g11.Data;
 using alquiler_vehiculos_g11.Models;
+using alquiler_vehiculos_g11.Repositories;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,6 +8,10 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddScoped<IVehiculoRepository, VehiculoRepository>();
+builder.Services.AddScoped<IAlquilerRepository, AlquilerRepository>();
+builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
+builder.Services.AddScoped<IInformeClientesRepository, ClienteInformeRepository>();
 
 var cadenaConexion = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en appsettings.json.");

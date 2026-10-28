@@ -1,0 +1,47 @@
+@model InformeLicenciasViewModel
+@{
+    ViewData["Title"] = "Licencias próximas a vencer";
+    var totalPaginas = Model.Resultado is null
+        ? 0
+        : (int)Math.Ceiling(Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina);
+}
+
+<h1>Licencias próximas a vencer</h1>
+<form asp-action="LicenciasPorVencer" method="get">
+    <label for="dias">Dentro de cuántos días</label>
+    <input id="dias" name="dias" type="number" min="1" max="3650" value="@Model.Dias" />
+    <button type="submit">Buscar</button>
+</form>
+@if (!string.IsNullOrEmpty(Model.Error))
+{
+    <p class="text-danger">@Model.Error</p>
+}
+@if (Model.Resultado is not null)
+{
+    <table class="table">
+        <thead><tr><th>DNI</th><th>Cliente</th><th>Licencia</th><th>Vencimiento</th></tr></thead>
+        <tbody>
+            @foreach (var cliente in Model.Resultado.Elementos)
+            {
+                <tr>
+                    <td>@cliente.Dni</td>
+                    <td>@cliente.Apellido, @cliente.Nombre</td>
+                    <td>@cliente.NumeroLicencia</td>
+                    <td>@cliente.VencimientoLicencia.ToString("d")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    <p>@Model.Resultado.TotalRegistros cliente(s)</p>
+    @if (Model.Resultado.Pagina > 1)
+    {
+        <a asp-action="LicenciasPorVencer" asp-route-dias="@Model.Dias"
+           asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+    }
+    <span>Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
+    @if (Model.Resultado.Pagina < totalPaginas)
+    {
+        <a asp-action="LicenciasPorVencer" asp-route-dias="@Model.Dias"
+           asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+    }
+}
