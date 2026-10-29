@@ -1,4 +1,4 @@
-@model IEnumerable<Cliente>
+@model ResultadoPaginado<Cliente>
 @{
     ViewData["Title"] = "Clientes";
 }
@@ -24,7 +24,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (Cliente cliente in Model)
+        @foreach (Cliente cliente in Model.Elementos)
         {
             <tr>
                 <td>@cliente.Apellido, @cliente.Nombre</td>
@@ -48,3 +48,21 @@
         }
     </tbody>
 </table>
+
+@{
+    var totalPaginas = (int)Math.Ceiling((double)Model.TotalRegistros / Model.TamanioPagina);
+}
+
+<div class="d-flex align-items-center gap-2">
+    @if (Model.Pagina > 1)
+    {
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-pagina="@(Model.Pagina - 1)">Anterior</a>
+    }
+
+    <span>Página @Model.Pagina de @(totalPaginas == 0 ? 1 : totalPaginas) — @Model.TotalRegistros cliente(s)</span>
+
+    @if (Model.Pagina < totalPaginas)
+    {
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-pagina="@(Model.Pagina + 1)">Siguiente</a>
+    }
+</div>

@@ -1,6 +1,7 @@
 using alquiler_vehiculos_g11.Data;
 using alquiler_vehiculos_g11.Models;
 using alquiler_vehiculos_g11.Repositories;
+using alquiler_vehiculos_g11.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,7 +10,10 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 builder.Services.AddScoped<IVehiculoRepository, VehiculoRepository>();
+builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
+builder.Services.AddScoped<ICategoriaVehiculoRepository, CategoriaVehiculoRepository>();
 builder.Services.AddScoped<IAlquilerRepository, AlquilerRepository>();
+builder.Services.AddScoped<IAlquilerService, AlquilerService>();
 builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 builder.Services.AddScoped<IInformeClientesRepository, ClienteInformeRepository>();
 

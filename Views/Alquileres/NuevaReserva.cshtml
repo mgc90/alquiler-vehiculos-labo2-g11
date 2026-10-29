@@ -1,1 +1,229 @@
+@model NuevaReservaViewModel
+
+@{
+    ViewData["Title"] = "Nueva reserva";
+}
+
 <h1>Nueva reserva</h1>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<form asp-action="NuevaReserva" method="post">
+    <input type="hidden" asp-for="ClienteId" />
+    <input type="hidden" asp-for="VehiculoId" />
+
+    <div class="card mb-3">
+        <div class="card-header">1. Cliente</div>
+        <div class="card-body">
+            <div class="input-group mb-2">
+                <input type="text" id="buscarCliente" class="form-control" placeholder="DNI, nombre o apellido" />
+                <button type="button" class="btn btn-outline-secondary" id="btnBuscarCliente">Buscar</button>
+            </div>
+            <p class="mb-1" id="clienteSeleccionado">Ningún cliente seleccionado.</p>
+            <span asp-validation-for="ClienteId" class="text-danger"></span>
+            <div id="resultadosClientes" class="mt-2"></div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">2. Categoría y fechas</div>
+        <div class="card-body row g-3">
+            <div class="col-md-4">
+                <label asp-for="CategoriaVehiculoId" class="form-label">Categoría</label>
+                <select asp-for="CategoriaVehiculoId" class="form-select">
+                    <option value="">Todas</option>
+                    @foreach (var categoria in Model.Categorias)
+                    {
+                        <option value="@categoria.Id">@categoria.Nombre ($@categoria.PrecioDiario por día)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="EntregaPrevista" class="form-label">Entrega</label>
+                <input asp-for="EntregaPrevista" type="date" class="form-control" />
+                <span asp-validation-for="EntregaPrevista" class="text-danger"></span>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="DevolucionPrevista" class="form-label">Devolución</label>
+                <input asp-for="DevolucionPrevista" type="date" class="form-control" />
+                <span asp-validation-for="DevolucionPrevista" class="text-danger"></span>
+            </div>
+            <div class="col-md-2 d-flex align-items-end">
+                <button type="button" class="btn btn-primary w-100" id="btnBuscarDisponibles">Disponibles</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">3. Vehículo</div>
+        <div class="card-body">
+            <p class="mb-2" id="mensajeDisponibles">Indique las fechas y presione "Disponibles".</p>
+            <span asp-validation-for="VehiculoId" class="text-danger"></span>
+            <table class="table table-sm d-none" id="tablaDisponibles">
+                <thead>
+                    <tr>
+                        <th>Patente</th>
+                        <th>Vehículo</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+            <p class="mb-1 mt-2" id="vehiculoSeleccionado">Ningún vehículo seleccionado.</p>
+            <div class="d-flex gap-2">
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="vehiculosAnterior" disabled>Anterior</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" id="vehiculosSiguiente" disabled>Siguiente</button>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success">Confirmar reserva</button>
+    <a asp-action="Index" class="btn btn-secondary">Cancelar</a>
+</form>
+
+@section Scripts {
+    <script>
+        const urlClientes = '@Url.Action("BuscarClientes", "Alquileres")';
+        const urlDisponibles = '@Url.Action("Disponibles", "Alquileres")';
+
+        const clienteId = document.getElementById('ClienteId');
+        const vehiculoId = document.getElementById('VehiculoId');
+        const resultadosClientes = document.getElementById('resultadosClientes');
+        const tablaDisponibles = document.getElementById('tablaDisponibles');
+        const mensajeDisponibles = document.getElementById('mensajeDisponibles');
+
+        let paginaClientes = 1;
+        let paginaVehiculos = 1;
+
+        document.getElementById('btnBuscarCliente').addEventListener('click', () => buscarClientes(1));
+        document.getElementById('buscarCliente').addEventListener('keydown', evento => {
+            if (evento.key === 'Enter') {
+                evento.preventDefault();
+                buscarClientes(1);
+            }
+        });
+        document.getElementById('btnBuscarDisponibles').addEventListener('click', () => buscarDisponibles(1));
+        document.getElementById('vehiculosAnterior').addEventListener('click', () => buscarDisponibles(paginaVehiculos - 1));
+        document.getElementById('vehiculosSiguiente').addEventListener('click', () => buscarDisponibles(paginaVehiculos + 1));
+
+        function escapar(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+            }[caracter]));
+        }
+
+        function cantidadPaginas(totalRegistros, tamanioPagina) {
+            return Math.max(1, Math.ceil(totalRegistros / tamanioPagina));
+        }
+
+        async function buscarClientes(pagina) {
+            const termino = document.getElementById('buscarCliente').value.trim();
+            const respuesta = await fetch(`${urlClientes}?termino=${encodeURIComponent(termino)}&pagina=${Math.max(1, pagina)}`);
+            if (!respuesta.ok) {
+                return;
+            }
+
+            const data = await respuesta.json();
+            paginaClientes = data.pagina;
+            const totalPaginas = cantidadPaginas(data.totalRegistros, data.tamanioPagina);
+
+            if (data.elementos.length === 0) {
+                resultadosClientes.innerHTML = '<p class="text-muted">Sin resultados.</p>';
+                return;
+            }
+
+            resultadosClientes.innerHTML = `
+                <div class="list-group mb-2">
+                    ${data.elementos.map(cliente => `
+                        <div class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>${escapar(cliente.apellido)}, ${escapar(cliente.nombre)} — DNI ${escapar(cliente.dni)} — licencia vence ${escapar(cliente.vencimientoLicencia)}</span>
+                            <button type="button" class="btn btn-sm btn-outline-primary" data-cliente="${cliente.id}" data-nombre="${escapar(cliente.apellido + ', ' + cliente.nombre)}">Elegir</button>
+                        </div>`).join('')}
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clientesAnterior" ${data.pagina <= 1 ? 'disabled' : ''}>Anterior</button>
+                    <span>Página ${data.pagina} de ${totalPaginas}</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" id="clientesSiguiente" ${data.pagina >= totalPaginas ? 'disabled' : ''}>Siguiente</button>
+                </div>`;
+
+            resultadosClientes.querySelectorAll('button[data-cliente]').forEach(boton => {
+                boton.addEventListener('click', () => {
+                    clienteId.value = boton.dataset.cliente;
+                    document.getElementById('clienteSeleccionado').textContent = `Cliente: ${boton.dataset.nombre}`;
+                });
+            });
+
+            document.getElementById('clientesAnterior').addEventListener('click', () => buscarClientes(paginaClientes - 1));
+            document.getElementById('clientesSiguiente').addEventListener('click', () => buscarClientes(paginaClientes + 1));
+        }
+
+        async function buscarDisponibles(pagina) {
+            const entrega = document.getElementById('EntregaPrevista').value;
+            const devolucion = document.getElementById('DevolucionPrevista').value;
+            const categoria = document.getElementById('CategoriaVehiculoId').value;
+
+            if (!entrega || !devolucion) {
+                mensajeDisponibles.textContent = 'Indique las fechas de entrega y devolución.';
+                return;
+            }
+
+            const parametros = new URLSearchParams({
+                entregaPrevista: entrega,
+                devolucionPrevista: devolucion,
+                pagina: Math.max(1, pagina)
+            });
+
+            if (categoria) {
+                parametros.append('categoriaVehiculoId', categoria);
+            }
+
+            const respuesta = await fetch(`${urlDisponibles}?${parametros}`);
+
+            if (!respuesta.ok) {
+                const error = await respuesta.json();
+                mensajeDisponibles.textContent = error.mensaje ?? 'No se pudo buscar disponibilidad.';
+                tablaDisponibles.classList.add('d-none');
+                return;
+            }
+
+            const data = await respuesta.json();
+            paginaVehiculos = data.pagina;
+            const totalPaginas = cantidadPaginas(data.totalRegistros, data.tamanioPagina);
+
+            document.getElementById('vehiculosAnterior').disabled = data.pagina <= 1;
+            document.getElementById('vehiculosSiguiente').disabled = data.pagina >= totalPaginas;
+
+            if (data.elementos.length === 0) {
+                mensajeDisponibles.textContent = 'No hay vehículos disponibles para esas fechas y categoría.';
+                tablaDisponibles.classList.add('d-none');
+                return;
+            }
+
+            mensajeDisponibles.textContent = `${data.totalRegistros} vehículo(s) disponible(s) — página ${data.pagina} de ${totalPaginas}`;
+            tablaDisponibles.classList.remove('d-none');
+            tablaDisponibles.querySelector('tbody').innerHTML = data.elementos.map(vehiculo => `
+                <tr>
+                    <td>${escapar(vehiculo.patente)}</td>
+                    <td>${escapar(vehiculo.marca)} ${escapar(vehiculo.modelo)}</td>
+                    <td>${escapar(vehiculo.categoria)}</td>
+                    <td>$${Number(vehiculo.precioDiario).toLocaleString('es-AR')} / día</td>
+                    <td>
+                        <button type="button" class="btn btn-sm btn-outline-primary"
+                                data-vehiculo="${vehiculo.id}"
+                                data-descripcion="${escapar(vehiculo.patente)} ${escapar(vehiculo.marca)} ${escapar(vehiculo.modelo)}">
+                            Elegir
+                        </button>
+                    </td>
+                </tr>`).join('');
+
+            tablaDisponibles.querySelectorAll('button[data-vehiculo]').forEach(boton => {
+                boton.addEventListener('click', () => {
+                    vehiculoId.value = boton.dataset.vehiculo;
+                    document.getElementById('vehiculoSeleccionado').textContent = `Vehículo: ${boton.dataset.descripcion}`;
+                });
+            });
+        }
+    </script>
+}

@@ -30,4 +30,10 @@ public interface IClienteRepository : IWriteRepository<Cliente>
         int pagina, 
         int tamanioPagina);
 
+    //Buscar clientes activos por DNI, nombre o apellido con paginado
+    Task<ResultadoPaginado<Cliente>> BuscarPorTerminoAsync(
+        string termino,
+        int pagina,
+        int tamanioPagina);
+
 }

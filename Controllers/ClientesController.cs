@@ -20,9 +20,9 @@ public class ClientesController : Controller
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int pagina = 1)
     {
-        var clientes = await _repository.ObtenerTodasAsync();
+        var clientes = await _repository.ObtenerClientesActivo(true, pagina, 10);
         return View(clientes);
     }
 
@@ -41,7 +41,7 @@ public class ClientesController : Controller
     [HttpGet]
     public IActionResult Create()
     {
-        return View(new ClienteFormularioViewModel());
+        return View(new Cliente());
     }
 
     [HttpPost]
@@ -97,6 +97,7 @@ public class ClientesController : Controller
 
             return View(new Cliente
             {
+                Id = cliente.Id,
                 Dni = cliente.Dni,
                 Nombre = cliente.Nombre,
                 Apellido = cliente.Apellido,
@@ -127,7 +128,7 @@ public class ClientesController : Controller
 
             if (!ModelState.IsValid)
             {
-                return View(model);
+                return View(ClienteDesde(model));
             }
 
             if (id != model.Id)
@@ -157,7 +158,7 @@ public class ClientesController : Controller
         catch
         {
             ModelState.AddModelError("", "Error al modificar los datos del cliente.");
-            return View(cliente);
+            return View(cliente ?? ClienteDesde(model));
         }
     }
 
@@ -210,4 +211,17 @@ public class ClientesController : Controller
             return View(cliente);
         }
     }
+
+    private static Cliente ClienteDesde(ClienteFormularioViewModel model) => new()
+    {
+        Id = model.Id,
+        Dni = model.Dni,
+        Nombre = model.Nombre,
+        Apellido = model.Apellido,
+        FechaNacimiento = model.FechaNacimiento,
+        Telefono = model.Telefono,
+        Email = model.Email,
+        NumeroLicencia = model.NumeroLicencia,
+        VencimientoLicencia = model.VencimientoLicencia
+    };
 }

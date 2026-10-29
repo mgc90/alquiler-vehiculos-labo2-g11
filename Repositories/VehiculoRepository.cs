@@ -52,13 +52,7 @@ public class VehiculoRepository : IVehiculoRepository
         int pagina,
         int tamanioPagina)
     {
-        if (devolucionPrevista < entregaPrevista)
-        {
-            throw new ArgumentException("La devolución prevista no puede ser anterior a la entrega prevista.");
-        }
-
-        var inicioPeriodo = entregaPrevista.Date;
-        var finPeriodoExclusivo = devolucionPrevista.Date.AddDays(1);
+        var (inicioPeriodo, finPeriodoExclusivo) = RangoDias(entregaPrevista, devolucionPrevista);
         var consulta = _context.Vehiculos
             .AsNoTracking()
             .Include(vehiculo => vehiculo.CategoriaVehiculo)
@@ -72,6 +66,37 @@ public class VehiculoRepository : IVehiculoRepository
             .OrderBy(vehiculo => vehiculo.Patente);
 
         return Paginacion.CrearResultadoAsync(consulta, pagina, tamanioPagina);
+    }
+
+    public Task<bool> EsDisponibleAsync(
+        int vehiculoId,
+        DateTime entregaPrevista,
+        DateTime devolucionPrevista)
+    {
+        var (inicioPeriodo, finPeriodoExclusivo) = RangoDias(entregaPrevista, devolucionPrevista);
+
+        return _context.Vehiculos
+            .AsNoTracking()
+            .AnyAsync(vehiculo =>
+                vehiculo.Id == vehiculoId
+                && vehiculo.EstadoOperativo == EstadoOperativoVehiculo.Habilitado
+                && !_context.Alquileres.Any(alquiler =>
+                    alquiler.VehiculoId == vehiculo.Id
+                    && (alquiler.Estado == EstadoAlquiler.Reservado || alquiler.Estado == EstadoAlquiler.EnCurso)
+                    && alquiler.EntregaPrevista < finPeriodoExclusivo
+                    && alquiler.DevolucionPrevista >= inicioPeriodo));
+    }
+
+    private static (DateTime Inicio, DateTime FinExclusivo) RangoDias(
+        DateTime entregaPrevista,
+        DateTime devolucionPrevista)
+    {
+        if (devolucionPrevista.Date < entregaPrevista.Date)
+        {
+            throw new ArgumentException("La devolución prevista no puede ser anterior a la entrega prevista.");
+        }
+
+        return (entregaPrevista.Date, devolucionPrevista.Date.AddDays(1));
     }
 
     public Task<ResultadoPaginado<Vehiculo>> BuscarAsync(

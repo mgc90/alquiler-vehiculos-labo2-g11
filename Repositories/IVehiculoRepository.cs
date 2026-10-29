@@ -14,6 +14,11 @@ public interface IVehiculoRepository : IWriteRepository<Vehiculo>
         int pagina,
         int tamanioPagina);
 
+    Task<bool> EsDisponibleAsync(
+        int vehiculoId,
+        DateTime entregaPrevista,
+        DateTime devolucionPrevista);
+
     Task<ResultadoPaginado<Vehiculo>> BuscarAsync(
         string termino,
         int pagina,
