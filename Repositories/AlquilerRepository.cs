@@ -28,6 +28,57 @@ public class AlquilerRepository : IAlquilerRepository
                 .ThenInclude(vehiculo => vehiculo!.CategoriaVehiculo)
             .FirstOrDefaultAsync(alquiler => alquiler.Id == id);
 
+    public async Task<IReadOnlyList<Alquiler>> ObtenerReservadosPorCategoriaAsync(int categoriaId) =>
+    await _context.Alquileres
+        .AsNoTracking()
+        .Include(alquiler => alquiler.Vehiculo)
+        .Where(alquiler =>
+            alquiler.Estado == EstadoAlquiler.Reservado
+            && alquiler.Vehiculo!.CategoriaVehiculoId == categoriaId
+            && alquiler.Vehiculo.EstadoOperativo == EstadoOperativoVehiculo.Habilitado)
+        .OrderBy(alquiler => alquiler.EntregaPrevista)
+        .ToListAsync();
+
+    public async Task<IReadOnlyList<Alquiler>> ObtenerEnCursoPorCategoriaAsync(int categoriaId) =>
+    await _context.Alquileres
+        .AsNoTracking()
+        .Include(alquiler => alquiler.Vehiculo)
+        .Where(alquiler =>
+            alquiler.Estado == EstadoAlquiler.EnCurso
+            && alquiler.Vehiculo!.CategoriaVehiculoId == categoriaId
+            && alquiler.Vehiculo.EstadoOperativo == EstadoOperativoVehiculo.Habilitado)
+        .OrderBy(alquiler => alquiler.DevolucionPrevista)
+        .ToListAsync();
+
+    public Task<Alquiler?> ObtenerReservadoParaEntregaAsync(int alquilerId) =>
+        _context.Alquileres
+            .AsNoTracking()
+            .Include(alquiler => alquiler.Cliente)
+            .Include(alquiler => alquiler.Vehiculo)
+            .FirstOrDefaultAsync(alquiler =>
+                alquiler.Id == alquilerId
+                && alquiler.Estado == EstadoAlquiler.Reservado
+                && alquiler.Vehiculo!.EstadoOperativo == EstadoOperativoVehiculo.Habilitado);
+
+    public Task<Alquiler?> ObtenerEnCursoParaDevolucionAsync(int alquilerId) =>
+        _context.Alquileres
+            .AsNoTracking()
+            .Include(alquiler => alquiler.Cliente)
+            .Include(alquiler => alquiler.Vehiculo)
+            .FirstOrDefaultAsync(alquiler =>
+                alquiler.Id == alquilerId
+                && alquiler.Estado == EstadoAlquiler.EnCurso
+                && alquiler.Vehiculo!.EstadoOperativo == EstadoOperativoVehiculo.Habilitado);
+                
+    public Task<Alquiler?> ObtenerDetalleAsync(int alquilerId) =>
+    _context.Alquileres
+        .AsNoTracking()
+        .IgnoreQueryFilters()
+        .Include(alquiler => alquiler.Cliente)
+        .Include(alquiler => alquiler.Vehiculo)
+        .Include(alquiler => alquiler.Pagos)
+        .FirstOrDefaultAsync(alquiler => alquiler.Id == alquilerId);
+
     public async Task AgregarAsync(Alquiler entity)
     {
         _context.Alquileres.Add(entity);

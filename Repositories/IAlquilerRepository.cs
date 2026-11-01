@@ -12,6 +12,19 @@ public interface IAlquilerRepository : IWriteRepository<Alquiler>
         int pagina,
         int tamanioPagina);
 
+    Task<IReadOnlyList<Alquiler>> ObtenerReservadosPorCategoriaAsync(
+        int categoriaId);
+
+    Task<IReadOnlyList<Alquiler>> ObtenerEnCursoPorCategoriaAsync(int categoriaId);
+
+    Task<Alquiler?> ObtenerReservadoParaEntregaAsync(
+        int alquilerId);
+
+    Task<Alquiler?> ObtenerEnCursoParaDevolucionAsync(
+        int alquilerId);
+
+    Task<Alquiler?> ObtenerDetalleAsync(int alquilerId);
+
     Task<ResultadoPaginado<Alquiler>> ObtenerVigentesAsync(
         DateTime desde,
         DateTime hasta,

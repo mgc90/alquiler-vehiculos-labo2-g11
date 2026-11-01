@@ -19,15 +19,26 @@ public interface IAlquilerService
         DateTime entregaPrevista,
         DateTime devolucionPrevista);
 
-    Task EntregarVehiculoAsync(int alquilerId, int usuarioId);
+    Task<Alquiler> EntregarVehiculoAsync(int alquilerId, DateTime entregaReal);
 
-    Task RegistrarDevolucionAsync(
+    Task<IReadOnlyList<Alquiler>> ObtenerReservadosPorCategoriaAsync(int categoriaId);
+
+    Task<IReadOnlyList<Alquiler>> ObtenerEnCursoPorCategoriaAsync(int categoriaId);
+
+    Task<Alquiler?> ObtenerReservadoParaEntregaAsync(int alquilerId);
+
+    Task<Alquiler?> ObtenerEnCursoParaDevolucionAsync(
+        int alquilerId);
+
+    Task<Alquiler> RegistrarDevolucionAsync(
         int alquilerId,
         int usuarioId,
         DateTime devolucionReal,
+        int kilometrajeDevolucion,
         decimal costosDanios,
         string? observaciones);
 
+    Task<Alquiler?> ObtenerDetalleAsync(int alquilerId);
     Task CancelarAsync(int alquilerId, int usuarioId);
 
     Task<Alquiler> ExtenderAsync(

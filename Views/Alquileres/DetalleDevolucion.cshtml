@@ -1,0 +1,106 @@
+@model Alquiler
+
+@{
+    ViewData["Title"] = "Detalle de la devolución";
+
+    var ar = new System.Globalization.CultureInfo("es-AR");
+    string Peso(decimal n) => n.ToString("C", ar);
+
+    var pagado = Model.Pagos.Sum(p => p.Importe);
+
+    var diasContratados = Math.Max(1, (Model.DevolucionPrevista.Date - Model.EntregaPrevista.Date).Days);
+    var importeOriginal = Model.PrecioAcordado * diasContratados;
+    var diasDemora = Model.PrecioAcordado > 0 ? (int)(Model.Multa / Model.PrecioAcordado) : 0;
+    var costosDanios = Model.ImporteTotal - importeOriginal - Model.Multa;
+    var saldo = Model.ImporteTotal - pagado;
+}
+
+<h1>Detalle de la devolución</h1>
+
+<div class="alert alert-success">
+    Devolución registrada correctamente. Estado del alquiler: <strong>@Model.Estado</strong>.
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">Alquiler N.º @Model.Id</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Cliente</dt>
+                    <dd class="col-sm-7">@Model.Cliente?.Apellido, @Model.Cliente?.Nombre</dd>
+                    <dt class="col-sm-5">DNI</dt>
+                    <dd class="col-sm-7">@Model.Cliente?.Dni</dd>
+                    <dt class="col-sm-5">Vehículo</dt>
+                    <dd class="col-sm-7">@Model.Vehiculo?.Marca @Model.Vehiculo?.Modelo (@Model.Vehiculo?.Patente)</dd>
+                    <dt class="col-sm-5">Kilometraje actual</dt>
+                    <dd class="col-sm-7">@Model.Vehiculo?.KilometrajeActual km</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">Fechas</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-6">Entrega prevista</dt>
+                    <dd class="col-sm-6">@Model.EntregaPrevista.ToString("dd/MM/yyyy")</dd>
+                    <dt class="col-sm-6">Entrega real</dt>
+                    <dd class="col-sm-6">@(Model.EntregaReal?.ToString("dd/MM/yyyy HH:mm") ?? "-")</dd>
+                    <dt class="col-sm-6">Devolución prevista</dt>
+                    <dd class="col-sm-6">@Model.DevolucionPrevista.ToString("dd/MM/yyyy")</dd>
+                    <dt class="col-sm-6">Devolución real</dt>
+                    <dd class="col-sm-6">@(Model.DevolucionReal?.ToString("dd/MM/yyyy HH:mm") ?? "-")</dd>
+                    <dt class="col-sm-6">Días de demora</dt>
+                    <dd class="col-sm-6">@(diasDemora > 0 ? $"{diasDemora} día/s" : "Sin demora")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mb-3">
+            <div class="card-header">Resumen del importe</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-8">Importe original (@diasContratados día/s × @Peso(Model.PrecioAcordado))</dt>
+                    <dd class="col-sm-4 text-end">@Peso(importeOriginal)</dd>
+
+                    <dt class="col-sm-8">Recargo por demora</dt>
+                    <dd class="col-sm-4 text-end">@Peso(Model.Multa)</dd>
+
+                    <dt class="col-sm-8">Costos por daños</dt>
+                    <dd class="col-sm-4 text-end">@Peso(costosDanios)</dd>
+
+                    <dt class="col-sm-8">Importe total</dt>
+                    <dd class="col-sm-4 text-end fw-bold">@Peso(Model.ImporteTotal)</dd>
+
+                    <dt class="col-sm-8">Pagos realizados</dt>
+                    <dd class="col-sm-4 text-end">@Peso(pagado)</dd>
+
+                    <dt class="col-sm-8">Saldo pendiente</dt>
+                    <dd class="col-sm-4 text-end fw-bold @(saldo > 0 ? "text-danger" : "text-success")">
+                        @Peso(saldo)
+                    </dd>
+                </dl>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrWhiteSpace(Model.Observaciones))
+        {
+            <div class="card mb-3">
+                <div class="card-header">Observaciones</div>
+                <div class="card-body">@Model.Observaciones</div>
+            </div>
+        }
+
+        <div class="d-flex gap-2">
+            <a asp-action="Index" class="btn btn-secondary">Volver a alquileres</a>
+            <a asp-action="Devolver" class="btn btn-outline-primary">Registrar otra devolución</a>
+        </div>
+    </div>
+</div>

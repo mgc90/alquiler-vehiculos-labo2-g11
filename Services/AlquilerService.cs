@@ -100,16 +100,94 @@ public class AlquilerService : IAlquilerService
         return alquiler;
     }
 
-    public Task EntregarVehiculoAsync(int alquilerId, int usuarioId) =>
-        throw new NotImplementedException("Pendiente: módulo de Entrega y devolución.");
+    public Task<IReadOnlyList<Alquiler>> ObtenerReservadosPorCategoriaAsync(
+        int categoriaId) =>
+        _alquilerRepository.ObtenerReservadosPorCategoriaAsync(categoriaId);
 
-    public Task RegistrarDevolucionAsync(
-        int alquilerId,
-        int usuarioId,
-        DateTime devolucionReal,
-        decimal costosDanios,
-        string? observaciones) =>
-        throw new NotImplementedException("Pendiente: módulo de Entrega y devolución.");
+    public Task<IReadOnlyList<Alquiler>> ObtenerEnCursoPorCategoriaAsync(
+        int categoriaId) =>
+        _alquilerRepository.ObtenerEnCursoPorCategoriaAsync(categoriaId);
+
+
+    public Task<Alquiler?> ObtenerReservadoParaEntregaAsync(int alquilerId) =>
+    _alquilerRepository.ObtenerReservadoParaEntregaAsync(alquilerId);
+
+    public Task<Alquiler?> ObtenerEnCursoParaDevolucionAsync(int alquilerId) =>
+    _alquilerRepository.ObtenerEnCursoParaDevolucionAsync(alquilerId);
+
+    public async Task<Alquiler> EntregarVehiculoAsync(
+        int alquilerId, 
+        DateTime entregaReal)
+    {
+        var alquiler = await _alquilerRepository.ObtenerPorIdAsync(alquilerId);
+
+        var fechaActual = DateTime.Now;
+
+        if (fechaActual < alquiler.EntregaPrevista)
+        {
+            throw new InvalidOperationException("No se permite alquileres antes de la fecha de entrega prevista.");
+        }
+
+        if (alquiler.Estado != EstadoAlquiler.Reservado)
+        {
+            throw new InvalidOperationException("Solo se pueden entregar alquileres en estado reservado.");
+        }
+
+        if (alquiler.Vehiculo!.EstadoOperativo != EstadoOperativoVehiculo.Habilitado)
+        {
+            throw new InvalidOperationException("El vehículo no está habilitado para entregar.");
+        }
+
+        alquiler.EntregaReal = entregaReal;
+        alquiler.Estado = EstadoAlquiler.EnCurso;
+
+        await _alquilerRepository.ActualizarAsync(alquiler);
+
+        return alquiler;
+    }
+
+    public async Task<Alquiler> RegistrarDevolucionAsync(
+    int alquilerId, int usuarioId, DateTime devolucionReal,
+    int kilometrajeDevolucion, decimal costosDanios, string? observaciones)
+    {
+        var alquiler = await _alquilerRepository.ObtenerPorIdAsync(alquilerId)
+            ?? throw new InvalidOperationException("El alquiler no existe.");
+
+        if (alquiler.Estado != EstadoAlquiler.EnCurso)
+            throw new InvalidOperationException("Solo se pueden devolver alquileres en curso.");
+
+        if (alquiler.EntregaReal is null || devolucionReal < alquiler.EntregaReal)
+            throw new InvalidOperationException("La devolución no puede ser anterior a la entrega.");
+
+        if (costosDanios < 0)
+            throw new ArgumentException("Los costos por daños no pueden ser negativos.");
+
+        if (kilometrajeDevolucion < alquiler.Vehiculo!.KilometrajeActual)
+            throw new ArgumentException("El kilometraje de devolución no puede ser menor al de salida.");
+
+        
+        
+        //var diasDemora = CalculoAlquiler.DiasDemora(alquiler, devolucionReal);
+
+        var demora = devolucionReal - alquiler.DevolucionPrevista.Date.AddDays(1);
+        var diasDemora = demora > TimeSpan.Zero ? (int)Math.Ceiling(demora.TotalDays) : 0;
+        var recargo = diasDemora * alquiler.PrecioAcordado;
+
+        alquiler.DevolucionReal = devolucionReal;     // DevolucionPrevista no se toca
+        alquiler.Multa = recargo;
+        alquiler.ImporteTotal += recargo + costosDanios;
+        alquiler.Observaciones = observaciones;
+        alquiler.CerradoPorUsuarioId = usuarioId;
+        alquiler.Estado = EstadoAlquiler.Finalizado;
+        alquiler.Vehiculo.KilometrajeActual = kilometrajeDevolucion;
+
+        await _alquilerRepository.ActualizarAsync(alquiler);
+        return alquiler;
+    }
+
+    
+    public Task<Alquiler?> ObtenerDetalleAsync(int alquilerId) =>
+    _alquilerRepository.ObtenerDetalleAsync(alquilerId);
 
     public Task CancelarAsync(int alquilerId, int usuarioId) =>
         throw new NotImplementedException("Pendiente: módulo de Cancelación, extensión y pagos.");

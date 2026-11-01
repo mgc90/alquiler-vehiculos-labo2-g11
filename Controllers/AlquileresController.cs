@@ -136,18 +136,153 @@ public class AlquileresController : Controller
     }
 
     [HttpGet]
-    public IActionResult Entregar(int id) => View();
+    public async Task<IActionResult> Entregar(int id)
+    {
+        var CategoriasActivas = await _vehiculoRepository.ObtenerCategoriasActivasAsync();
 
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    public IActionResult Entregar(int id, DateTime entregaReal) => View();
+        return View(CategoriasActivas);
+    }
 
     [HttpGet]
-    public IActionResult Devolver(int id) => View();
+    public async Task<IActionResult> ReservadosPorCategoria(int categoriaId)
+    {
+        var reservas = await _alquilerService.ObtenerReservadosPorCategoriaAsync(categoriaId);
+
+        return Json(reservas.Select(a => new
+        {
+            alquilerId = a.Id,
+            texto = $"{a.Vehiculo!.Patente} - {a.Vehiculo.Marca} {a.Vehiculo.Modelo}"
+        }));
+    }
+
+    [HttpGet]
+    public async Task <IActionResult> EnCursoPorCategoria(int categoriaId)
+    {
+        var enCurso = await _alquilerService.ObtenerEnCursoPorCategoriaAsync(categoriaId);
+
+        return Json(enCurso.Select(a => new
+        {
+            alquilerId = a.Id,
+            texto = $"{a.Vehiculo!.Patente} - {a.Vehiculo.Marca} {a.Vehiculo.Modelo}"
+        }));
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DetalleReserva(int alquilerId)
+    {
+        var a = await _alquilerService.ObtenerReservadoParaEntregaAsync(alquilerId);
+        if (a == null) return NotFound();
+
+        return Json(new
+        {
+            cliente = $"{a.Cliente!.Apellido}, {a.Cliente.Nombre}",
+            dni =  $"{a.Cliente.Dni}",
+            vehiculo = $"{a.Vehiculo!.Marca} {a.Vehiculo.Modelo} ({a.Vehiculo.Patente})",
+            kilometraje = a.Vehiculo.KilometrajeActual,
+            entregaPrevista = a.EntregaPrevista.ToString("dd/MM/yyyy HH:mm"),
+            devolucionPrevista = a.DevolucionPrevista.ToString("dd/MM/yyyy HH:mm"),
+            precioAcordado = a.PrecioAcordado,
+        });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DetalleReservaEnCurso(int alquilerId)
+    {
+        var a = await _alquilerService.ObtenerEnCursoParaDevolucionAsync(alquilerId);
+        if (a == null) return NotFound();
+
+        var limite = a.DevolucionPrevista.Date.AddDays(1);
+        var demora = DateTime.Now - limite;
+        var diasDemora = demora > TimeSpan.Zero ? (int)Math.Ceiling(demora.TotalDays): 0;
+
+        return Json(new
+        {
+            cliente = $"{a.Cliente!.Apellido}, {a.Cliente.Nombre}",
+            dni = $"{a.Cliente.Dni}",
+            vehiculo = $"{a.Vehiculo!.Marca} {a.Vehiculo.Modelo} ({a.Vehiculo.Patente})",
+            kilometraje = a.Vehiculo.KilometrajeActual,
+            entregaReal = a.EntregaReal?.ToString("dd/MM/yyyy HH:mm"),
+            devolucionPrevista = a.DevolucionPrevista.ToString("dd/MM/yyyy"),
+            diasDemora,
+            recargo = diasDemora * a.PrecioAcordado,
+            importeTotal = a.ImporteTotal,
+            precioAcordado = a.PrecioAcordado
+        });
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Devolver(int id, DateTime devolucionReal, string? observaciones) => View();
+    public async Task<IActionResult> Entregar(int alquilerId, DateTime entregaReal)
+    {
+
+        if (!ModelState.IsValid)
+        {
+            var CategoriasActivas = await _vehiculoRepository.ObtenerCategoriasActivasAsync();
+            return View(CategoriasActivas);
+        }
+
+        try
+        {
+            entregaReal = DateTime.Now;
+            var alquiler = await _alquilerService.EntregarVehiculoAsync(alquilerId, entregaReal);
+
+            TempData["Mensaje"] = $"Reserva #{alquilerId} en curso hasta el {alquiler.DevolucionPrevista:dd/MM/yyyy}.";
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception ex) when (ex is ArgumentException or InvalidOperationException)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            var CategoriasActivas = await _vehiculoRepository.ObtenerCategoriasActivasAsync();
+            return View(CategoriasActivas);
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Devolver(int id)
+    {
+
+        var model = new DevolucionVehiculoViewModel
+        {
+            Categorias = await _vehiculoRepository.ObtenerCategoriasActivasAsync()
+        };
+
+        return View(model);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Devolver(int alquilerId, int kilometrajeDevolucion, decimal costosDanios, string? observaciones)
+    {
+        try
+        {
+            var usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+            var devolucionReal = DateTime.Now;
+
+            var alquiler = await _alquilerService.RegistrarDevolucionAsync(
+                alquilerId, usuarioId, devolucionReal, kilometrajeDevolucion, costosDanios, observaciones);
+
+            return RedirectToAction(nameof(DetalleDevolucion), new { id = alquiler.Id });
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or ArgumentException)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+
+            return View(new DevolucionVehiculoViewModel
+            {
+                Categorias = await _vehiculoRepository.ObtenerCategoriasActivasAsync()
+            });
+        }
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> DetalleDevolucion(int id)
+    {
+        var alquiler = await _alquilerService.ObtenerDetalleAsync(id);
+        if (alquiler == null) return NotFound();
+
+        return View(alquiler);
+    }
 
     [HttpGet]
     public IActionResult Cancelar(int id) => View();

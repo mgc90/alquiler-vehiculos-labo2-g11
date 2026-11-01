@@ -1,1 +1,213 @@
-<h1>Registrar devolución</h1>
+@model DevolucionVehiculoViewModel
+
+@{
+    ViewData["Title"] = "Devolver vehículo";
+}
+
+<h1>Devolver Vehículo</h1>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<form asp-action="Devolver" method="post" class="mt-4">
+    <div class="d-flex justify-content-center justify-items-center">
+        <div class="card mb-3 w-25">
+            <div class="card-header">1. Categoría</div>
+            <div class="card-body row g-3">
+                <div class="col-md-4 w-100">
+                    <label asp-for="CategoriaVehiculoId" class="form-label">Elegir categoría</label>
+                    <select asp-for="CategoriaVehiculoId" class="form-select">
+                        @foreach (var categoria in Model.Categorias)
+                        {
+                            <option value="@categoria.Id">@categoria.Nombre</option>
+                        }
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-center">
+        <div class="card mb-3 w-25">
+            <div class="card-header">2. Vehículo</div>
+            <div class="card-body">
+                <label asp-for="AlquilerId" class="form-label">Elegir vehículo reservado</label>
+                <select asp-for="AlquilerId" class="form-select" required></select>
+                <div id="sinReservasEnCurso" class="form-text text-danger d-none">
+                    No se ha encontrado vehículos con reserva en curso
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panelReserva" class="d-flex justify-content-center d-none">
+        <div class="card mb-3 w-50">
+            <div class="card-header">3. Datos de la reserva</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Cliente</dt>
+                    <dd class="col-sm-7" id="dCliente"></dd>
+                    <dt class="col-sm-5">DNI</dt>
+                    <dd class="col-sm-7" id="dDNI"></dd>
+                    <dt class="col-sm-5">Vehículo</dt>
+                    <dd class="col-sm-7" id="dVehiculo"></dd>
+                    <dt class="col-sm-5">Kilometraje de salida</dt>
+                    <dd class="col-sm-7" id="dKilometraje"></dd>
+                    <dt class="col-sm-5">Entrega real</dt>
+                    <dd class="col-sm-7" id="dEntregaReal"></dd>
+                    <dt class="col-sm-5">Devolución prevista</dt>
+                    <dd class="col-sm-7" id="dDevolucion"></dd>
+                    <dt class="col-sm-5">Días de demora</dt>
+                    <dd class="col-sm-7" id="dDemora"></dd>
+                    <dt class="col-sm-5">Precio acordado</dt>
+                    <dd class="col-sm-7" id="dPrecio"></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div id="panelDevolucion" class="d-flex justify-content-center d-none">
+        <div class="card mb-3 w-50">
+            <div class="card-header">4. Registro de la devolución</div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label for="kilometrajeDevolucion" class="form-label">Kilometraje al devolver</label>
+                    <input type="number" id="kilometrajeDevolucion" name="kilometrajeDevolucion"
+                        class="form-control" min="0" required />
+                </div>
+                <div class="mb-3">
+                    <label for="costosDanios" class="form-label">Costos por daños ($)</label>
+                    <input type="number" id="costosDanios" name="costosDanios"
+                        class="form-control" min="0" step="0.01" value="0" />
+                </div>
+                <div class="mb-0">
+                    <label for="observacionesDevolucion" class="form-label">Observaciones de la devolución</label>
+                    <textarea id="observacionesDevolucion" name="observaciones"
+                            class="form-control" rows="3" maxlength="500"></textarea>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="panelImporte" class="d-flex justify-content-center d-none">
+        <div class="card mb-3 w-50">
+            <div class="card-header">5. Resumen del importe</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-7">Importe original</dt>
+                    <dd class="col-sm-5 text-end" id="rImporte"></dd>
+                    <dt class="col-sm-7" id="rDemoraTitulo">Recargo por demora</dt>
+                    <dd class="col-sm-5 text-end" id="rRecargo"></dd>
+                    <dt class="col-sm-7">Costos por daños</dt>
+                    <dd class="col-sm-5 text-end" id="rDanios"></dd>
+                    <dt class="col-sm-7">Importe total</dt>
+                    <dd class="col-sm-5 text-end fw-bold" id="rTotal"></dd>
+                    <dt class="col-sm-7">Pagos realizados</dt>
+                    <dd class="col-sm-5 text-end" id="rPagado"></dd>
+                    <dt class="col-sm-7">Saldo pendiente</dt>
+                    <dd class="col-sm-5 text-end fw-bold" id="rSaldo"></dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" id="btnConfirmar" class="btn btn-success" disabled> Confirmar devolución</button>
+    <a asp-action="Index" class="btn btn-secondary">Volver</a>
+
+</form>
+
+@section Scripts {
+    <script>
+        const selCategoria = document.getElementById("CategoriaVehiculoId");
+        const selVehiculo  = document.getElementById("AlquilerId");
+        const panelReserva = document.getElementById("panelReserva");
+        const panelDevolucion = document.getElementById("panelDevolucion");
+        const panelImporte = document.getElementById("panelImporte");
+        const sinReservasEnCurso = document.getElementById("sinReservasEnCurso");
+        const btnConfirmar = document.getElementById("btnConfirmar");
+
+        const inpKm = document.getElementById("kilometrajeDevolucion");
+        const inpCostos = document.getElementById("costosDanios");
+        const txtObservaciones = document.getElementById("observacionesDevolucion");
+
+        let datosImporte = null;
+
+        const peso = n => n.toLocaleString("es-AR", { style: "currency", currency: "ARS" });
+
+        function ocultarPaneles() {
+            panelReserva.classList.add("d-none");
+            panelDevolucion.classList.add("d-none");
+            panelImporte.classList.add("d-none");
+            btnConfirmar.disabled = true;
+            datosImporte = null;
+        }
+
+        function actualizarResumen() {
+            if (!datosImporte) return;
+
+            const danios = parseFloat(inpCostos.value) || 0;
+            const total  = datosImporte.importeTotal + datosImporte.recargo + danios;
+            const pagado = datosImporte.pagado ?? 0;
+
+            document.getElementById("rImporte").textContent = peso(datosImporte.importeTotal);
+            document.getElementById("rDemoraTitulo").textContent =
+                `Recargo por demora (${datosImporte.diasDemora} día/s)`;
+            document.getElementById("rRecargo").textContent = peso(datosImporte.recargo);
+            document.getElementById("rDanios").textContent  = peso(danios);
+            document.getElementById("rTotal").textContent   = peso(total);
+            document.getElementById("rPagado").textContent  = peso(pagado);
+            document.getElementById("rSaldo").textContent   = peso(total - pagado);
+        }
+
+        async function cargarVehiculos() {
+            selVehiculo.innerHTML = "";
+            ocultarPaneles();
+
+            const resp = await fetch(`/Alquileres/EnCursoPorCategoria?categoriaId=${selCategoria.value}`);
+            const datos = await resp.json();
+
+            sinReservasEnCurso.classList.toggle("d-none", datos.length > 0);
+            if (datos.length === 0) return;
+
+            selVehiculo.add(new Option("-- Seleccionar --", ""));
+            datos.forEach(d => selVehiculo.add(new Option(d.texto, d.alquilerId)));
+        }
+
+        async function cargarDetalle() {
+            ocultarPaneles();
+            if (!selVehiculo.value) return;
+
+            const resp = await fetch(`/Alquileres/DetalleReservaEnCurso?alquilerId=${selVehiculo.value}`);
+            if (!resp.ok) return;
+            const d = await resp.json();
+
+            document.getElementById("dCliente").textContent = d.cliente;
+            document.getElementById("dDNI").textContent = d.dni;
+            document.getElementById("dVehiculo").textContent = d.vehiculo;
+            document.getElementById("dKilometraje").textContent = `${d.kilometraje} km`;
+            document.getElementById("dEntregaReal").textContent = d.entregaReal;
+            document.getElementById("dDevolucion").textContent = d.devolucionPrevista;
+            document.getElementById("dDemora").textContent = d.diasDemora > 0 ? `${d.diasDemora} día(s)` : "Sin demora";
+            document.getElementById("dPrecio").textContent = `${d.precioAcordado}$`;
+            document.getElementById("dPrecio").textContent = peso(d.precioAcordado);
+
+            inpKm.min = d.kilometraje;
+            inpKm.value = d.kilometraje;
+            inpCostos.value = 0;
+            txtObservaciones.value = "";
+
+            datosImporte = d;
+            actualizarResumen();
+
+            panelReserva.classList.remove("d-none");
+            panelDevolucion.classList.remove("d-none");
+            panelImporte.classList.remove("d-none");
+            btnConfirmar.disabled = false;
+        }
+
+        selCategoria.addEventListener("change", cargarVehiculos);
+        selVehiculo.addEventListener("change", cargarDetalle);
+        inpCostos.addEventListener("input", actualizarResumen);
+        
+        cargarVehiculos();
+    </script>
+}
