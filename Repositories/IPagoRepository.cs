@@ -8,8 +8,12 @@ public interface IPagoRepository : IRepository<Pago>
 
     Task AnularAsync(int pagoId, int usuarioId, DateTime fechaAnulacion);
 
+    Task<decimal> ObtenerTotalVigentePorAlquilerAsync(int alquilerId);
+    
     Task<ResultadoPaginado<Pago>> ObtenerPorAlquilerAsync(
         int alquilerId,
         int pagina,
         int tamanioPagina);
+
+    
 }

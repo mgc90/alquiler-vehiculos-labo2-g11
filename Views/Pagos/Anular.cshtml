@@ -1,1 +1,52 @@
-<h1>Anular pago</h1>
+@model alquiler_vehiculos_g11.Models.ViewModels.PagoAnulacionViewModel
+
+@{
+    ViewData["Title"] = "Anular Pago";
+}
+
+<h2>Anular Pago</h2>
+<hr />
+
+<div class="alert alert-warning">
+    ¿Está seguro de que desea anular este pago?
+    Esta operación no elimina el registro, sino que cambia su estado.
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+
+        <dl class="row">
+            <dt class="col-sm-4">N.º de pago</dt>
+            <dd class="col-sm-8">@Model.Id</dd>
+
+            <dt class="col-sm-4">Alquiler</dt>
+            <dd class="col-sm-8">@Model.AlquilerId</dd>
+
+            <dt class="col-sm-4">Importe</dt>
+            <dd class="col-sm-8">@Model.Importe.ToString("C2")</dd>
+
+            <dt class="col-sm-4">Tipo</dt>
+            <dd class="col-sm-8">@Model.Tipo</dd>
+
+            <dt class="col-sm-4">Medio de pago</dt>
+            <dd class="col-sm-8">@Model.MedioPago</dd>
+
+            <dt class="col-sm-4">Fecha</dt>
+            <dd class="col-sm-8">@Model.Fecha.ToString("dd/MM/yyyy HH:mm")</dd>
+        </dl>
+
+        <form asp-action="Anular" method="post">
+            <input type="hidden" name="id" value="@Model.Id" />
+
+            <button type="submit" class="btn btn-danger">
+                Confirmar anulación
+            </button>
+
+            <a asp-controller="Alquileres" asp-action="Details" asp-route-id="@Model.AlquilerId"
+                class="btn btn-secondary">
+                Volver
+            </a>
+        </form>
+    </div>
+</div>
+

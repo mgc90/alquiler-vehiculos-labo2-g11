@@ -13,9 +13,13 @@ builder.Services.AddScoped<IVehiculoRepository, VehiculoRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<ICategoriaVehiculoRepository, CategoriaVehiculoRepository>();
 builder.Services.AddScoped<IAlquilerRepository, AlquilerRepository>();
+builder.Services.AddScoped<IPagoRepository, PagoRepository>();
 builder.Services.AddScoped<IAlquilerService, AlquilerService>();
+builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 builder.Services.AddScoped<IInformeClientesRepository, ClienteInformeRepository>();
+
+
 
 var cadenaConexion = builder.Configuration.GetConnectionString("DefaultConnection")
     ?? throw new InvalidOperationException("Falta la cadena de conexión 'DefaultConnection' en appsettings.json.");
