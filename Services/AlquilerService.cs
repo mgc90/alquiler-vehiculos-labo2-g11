@@ -25,20 +25,23 @@ public class AlquilerService : IAlquilerService
         DateTime devolucionPrevista,
         int? categoriaVehiculoId,
         int pagina,
-        int tamanioPagina) =>
+        int tamanioPagina,
+        int? alquilerExcluirId = null) =>
         _vehiculoRepository.BuscarDisponiblesAsync(
             entregaPrevista,
             devolucionPrevista,
             categoriaVehiculoId,
             pagina,
-            tamanioPagina);
+            tamanioPagina,
+            alquilerExcluirId);
 
     public async Task<Alquiler> CrearReservaAsync(
         int clienteId,
         int vehiculoId,
         int usuarioId,
         DateTime entregaPrevista,
-        DateTime devolucionPrevista)
+        DateTime devolucionPrevista,
+        int? alquilerExcluirId = null)
     {
         var entrega = entregaPrevista.Date;
         var devolucion = devolucionPrevista.Date;
@@ -74,7 +77,11 @@ public class AlquilerService : IAlquilerService
             throw new InvalidOperationException("El vehículo no está habilitado para alquilar.");
         }
 
-        if (!await _vehiculoRepository.EsDisponibleAsync(vehiculoId, entrega, devolucion))
+        if (!await _vehiculoRepository.EsDisponibleAsync(
+            vehiculoId,
+            entrega,
+            devolucion,
+            alquilerExcluirId))
         {
             throw new InvalidOperationException("El vehículo ya está reservado en esas fechas.");
         }
@@ -119,9 +126,13 @@ public class AlquilerService : IAlquilerService
         int alquilerId, 
         DateTime entregaReal)
     {
-        var alquiler = await _alquilerRepository.ObtenerPorIdAsync(alquilerId);
+        var alquiler = await _alquilerRepository.ObtenerPorIdAsync(alquilerId)
+    ?? throw new InvalidOperationException("El alquiler no existe.");
 
-        var fechaActual = DateTime.Now;
+    var vehiculo = alquiler.Vehiculo
+        ?? throw new InvalidOperationException("El vehículo asociado al alquiler no existe.");
+
+    var fechaActual = DateTime.Now;
 
         if (fechaActual < alquiler.EntregaPrevista)
         {
@@ -133,7 +144,7 @@ public class AlquilerService : IAlquilerService
             throw new InvalidOperationException("Solo se pueden entregar alquileres en estado reservado.");
         }
 
-        if (alquiler.Vehiculo!.EstadoOperativo != EstadoOperativoVehiculo.Habilitado)
+        if (vehiculo.EstadoOperativo != EstadoOperativoVehiculo.Habilitado)
         {
             throw new InvalidOperationException("El vehículo no está habilitado para entregar.");
         }
@@ -189,16 +200,76 @@ public class AlquilerService : IAlquilerService
     public Task<Alquiler?> ObtenerDetalleAsync(int alquilerId) =>
     _alquilerRepository.ObtenerDetalleAsync(alquilerId);
 
-    public Task CancelarAsync(int alquilerId, int usuarioId) =>
-        throw new NotImplementedException("Pendiente: módulo de Cancelación, extensión y pagos.");
 
-    public Task<Alquiler> ExtenderAsync(
-        int alquilerId,
-        int usuarioId,
-        DateTime entregaPrevista,
-        DateTime devolucionPrevista) =>
-        throw new NotImplementedException("Pendiente: módulo de Cancelación, extensión y pagos.");
+    public async Task CancelarAsync(int alquilerId, int usuarioId)
+    {
+        var alquiler = await _alquilerRepository.ObtenerPorIdAsync(alquilerId)
+            ?? throw new InvalidOperationException(
+                "El alquiler no existe.");
 
+        if (alquiler.Estado != EstadoAlquiler.Reservado)
+        {
+            throw new InvalidOperationException(
+                "Solo se pueden cancelar alquileres que estén reservados.");
+        }
+
+        if (alquiler.EntregaReal.HasValue)
+        {
+            throw new InvalidOperationException(
+                "No se puede cancelar directamente un alquiler cuyo vehículo ya fue entregado. Primero debe registrarse su devolución física.");
+        }
+
+        var multa = alquiler.ImporteTotal * 0.25m;
+
+        alquiler.Multa = multa;
+
+        alquiler.Estado = EstadoAlquiler.Cancelado;
+        alquiler.CerradoPorUsuarioId = usuarioId;
+
+        await _alquilerRepository.ActualizarAsync(alquiler);
+    }
+
+    public async Task<Alquiler> ExtenderAsync(
+    int alquilerId,
+    int vehiculoId,
+    int usuarioId,
+    DateTime entregaPrevista,
+    DateTime devolucionPrevista)
+    {
+        var alquilerOriginal = await _alquilerRepository.ObtenerPorIdAsync(alquilerId)
+            ?? throw new InvalidOperationException("El alquiler no existe.");
+
+        if (alquilerOriginal.Estado != EstadoAlquiler.Reservado &&
+            alquilerOriginal.Estado != EstadoAlquiler.EnCurso)
+        {
+            throw new InvalidOperationException(
+                "Solo se pueden extender alquileres reservados o en curso.");
+        }
+
+        var nuevaEntrega = alquilerOriginal.DevolucionPrevista.Date;
+
+        if (entregaPrevista.Date != nuevaEntrega)
+        {
+            throw new ArgumentException(
+                "La fecha de entrega de la extensión debe coincidir con la fecha de devolución original.");
+        }
+
+        var nuevaDevolucion = devolucionPrevista.Date;
+
+        if (nuevaDevolucion <= nuevaEntrega)
+        {
+            throw new ArgumentException(
+                "La nueva fecha de devolución debe ser posterior a la fecha de devolución original.");
+        }
+
+        return await CrearReservaAsync(
+            alquilerOriginal.ClienteId,
+            vehiculoId,
+            usuarioId,
+            nuevaEntrega,
+            nuevaDevolucion,
+            alquilerOriginal.Id);
+    }
     private static int CalcularEdad(DateTime fechaNacimiento, DateTime referencia)
     {
         var edad = referencia.Year - fechaNacimiento.Year;
@@ -208,5 +279,10 @@ public class AlquilerService : IAlquilerService
         }
 
         return edad;
+    }
+
+    public Task<Alquiler?> ObtenerPorIdAsync(int id)
+    {
+        return _alquilerRepository.ObtenerPorIdAsync(id);
     }
 }

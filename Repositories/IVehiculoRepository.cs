@@ -12,12 +12,14 @@ public interface IVehiculoRepository : IWriteRepository<Vehiculo>
         DateTime devolucionPrevista,
         int? categoriaVehiculoId,
         int pagina,
-        int tamanioPagina);
+        int tamanioPagina,
+        int? alquilerExcluirId = null);
 
     Task<bool> EsDisponibleAsync(
         int vehiculoId,
         DateTime entregaPrevista,
-        DateTime devolucionPrevista);
+        DateTime devolucionPrevista,
+        int? alquilerExcluirId = null);
 
     Task<ResultadoPaginado<Vehiculo>> BuscarAsync(
         string termino,

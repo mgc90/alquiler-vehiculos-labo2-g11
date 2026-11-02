@@ -1,1 +1,19 @@
-<h1>Detalle de alquiler</h1>
+@{
+    ViewData["Title"] = "Detalle del alquiler";
+}
+
+<h1>Detalle del alquiler</h1>
+
+@if (TempData["Mensaje"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Mensaje"]
+    </div>
+}
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}

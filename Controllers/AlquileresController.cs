@@ -5,6 +5,7 @@ using alquiler_vehiculos_g11.Repositories;
 using alquiler_vehiculos_g11.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using alquiler_vehiculos_g11.Models.Enums;
 
 namespace alquiler_vehiculos_g11.Controllers;
 
@@ -102,16 +103,69 @@ public class AlquileresController : Controller
         DateTime entregaPrevista,
         DateTime devolucionPrevista,
         int? categoriaVehiculoId,
-        int pagina = 1)
+        int pagina = 1,
+        int? alquilerExcluirId = null,
+        int? vehiculoId = null)
     {
         try
         {
+            if (alquilerExcluirId.HasValue)
+            {
+                var alquilerOriginal = await _alquilerService.ObtenerPorIdAsync(
+                    alquilerExcluirId.Value);
+
+                if (alquilerOriginal == null
+                    || (alquilerOriginal.Estado != EstadoAlquiler.Reservado
+                        && alquilerOriginal.Estado != EstadoAlquiler.EnCurso)
+                    || entregaPrevista.Date != alquilerOriginal.DevolucionPrevista.Date)
+                {
+                    return BadRequest(new
+                    {
+                        Mensaje = "El alquiler indicado no puede utilizarse para esta extensión."
+                    });
+                }
+            }
+            if (vehiculoId.HasValue)
+            {
+                var vehiculo = await _vehiculoRepository.ObtenerPorIdAsync(
+                    vehiculoId.Value);
+                if (vehiculo == null)
+                {
+                    return NotFound(new
+                    {
+                        Mensaje = "El vehículo indicado no existe."
+                    });
+                }
+
+                var disponible = await _vehiculoRepository.EsDisponibleAsync(
+                    vehiculo.Id,
+                    entregaPrevista,
+                    devolucionPrevista,
+                    alquilerExcluirId);
+
+                return Json(new
+                {
+                    Disponible = disponible,
+                    Vehiculo = new
+                    {
+                        vehiculo.Id,
+                        vehiculo.Patente,
+                        vehiculo.Marca,
+                        vehiculo.Modelo,
+                        Categoria = vehiculo.CategoriaVehiculo?.Nombre,
+                        PrecioDiario = vehiculo.CategoriaVehiculo?.PrecioDiario
+                    }
+                });
+            }
+
+            // Si no se solicita un vehículo puntual, se mantiene la búsqueda paginada.
             var resultado = await _alquilerService.BuscarDisponiblesAsync(
                 entregaPrevista,
                 devolucionPrevista,
                 categoriaVehiculoId,
                 pagina,
-                TamPagina);
+                TamPagina,
+                alquilerExcluirId);
 
             return Json(new
             {
@@ -206,7 +260,10 @@ public class AlquileresController : Controller
             diasDemora,
             recargo = diasDemora * a.PrecioAcordado,
             importeTotal = a.ImporteTotal,
-            precioAcordado = a.PrecioAcordado
+            precioAcordado = a.PrecioAcordado,
+            pagado = a.Pagos
+                .Where(p => p.Estado == EstadoPago.Vigente)
+                .Sum(p => p.Importe),
         });
     }
 
@@ -284,17 +341,140 @@ public class AlquileresController : Controller
         return View(alquiler);
     }
 
+
     [HttpGet]
-    public IActionResult Cancelar(int id) => View();
+    public async Task<IActionResult> Cancelar(int id)
+    {
+        var alquiler = await _alquilerService.ObtenerPorIdAsync(id);
+
+        if (alquiler == null)
+        {
+            return NotFound();
+        }
+
+        if (alquiler.Estado != EstadoAlquiler.Reservado ||
+            alquiler.EntregaReal.HasValue)
+        {
+            TempData["Error"] = "Solo se pueden cancelar reservas cuyo vehículo todavía no fue entregado.";
+
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        return View(alquiler);
+    }
 
     [HttpPost, ActionName("Cancelar")]
     [ValidateAntiForgeryToken]
-    public IActionResult CancelarConfirmado(int id) => View("Cancelar");
+    public async Task<IActionResult> CancelarConfirmado(int id)
+    {
+        var usuarioIdClaim =
+            User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+        if (!int.TryParse(usuarioIdClaim, out var usuarioId))
+        {
+            return Forbid();
+        }
+
+        try
+        {
+            await _alquilerService.CancelarAsync(id, usuarioId);
+            TempData["Mensaje"] = "El alquiler fue cancelado correctamente.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction(nameof(Cancelar), new { id });
+        }
+    }
+
+
 
     [HttpGet]
-    public IActionResult Extender(int id) => View();
+    public async Task<IActionResult> Extender(int id)
+    {
+        var alquiler = await _alquilerService.ObtenerPorIdAsync(id);
+
+        if (alquiler == null)
+        {
+            return NotFound();
+        }
+
+        if (alquiler.Estado != EstadoAlquiler.Reservado &&
+            alquiler.Estado != EstadoAlquiler.EnCurso)
+        {
+            TempData["Error"] = "Solo se pueden extender alquileres reservados o en curso.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        var model = new ExtenderAlquilerViewModel
+        {
+            AlquilerId = alquiler.Id,
+            ClienteNombre = $"{alquiler.Cliente?.Nombre} {alquiler.Cliente?.Apellido}",
+            VehiculoOriginal = $"{alquiler.Vehiculo?.Marca} {alquiler.Vehiculo?.Modelo}",
+            EstadoOriginal = alquiler.Estado,
+            EntregaExtension = alquiler.DevolucionPrevista.Date,
+            DevolucionPrevista = alquiler.DevolucionPrevista.Date.AddDays(1),
+            VehiculoId = alquiler.VehiculoId,
+            Categorias = await _vehiculoRepository.ObtenerCategoriasActivasAsync()
+        };
+        ViewData["VehiculoOriginalId"] = alquiler.VehiculoId;
+        return View(model);
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public IActionResult Extender(int id, DateTime entregaPrevista, DateTime devolucionPrevista) => View();
+    public async Task<IActionResult> Extender(ExtenderAlquilerViewModel model)
+    {
+        if (!ModelState.IsValid)
+        {
+            var alquilerOriginal = await _alquilerService.ObtenerPorIdAsync(model.AlquilerId);
+
+            if (alquilerOriginal == null)
+            {
+                return NotFound();
+            }
+            model.ClienteNombre = $"{alquilerOriginal.Cliente?.Nombre} {alquilerOriginal.Cliente?.Apellido}";
+            model.VehiculoOriginal = $"{alquilerOriginal.Vehiculo?.Marca} {alquilerOriginal.Vehiculo?.Modelo}";
+            model.EstadoOriginal = alquilerOriginal.Estado;
+            model.EntregaExtension = alquilerOriginal.DevolucionPrevista.Date;
+            model.Categorias = await _vehiculoRepository.ObtenerCategoriasActivasAsync();
+            ViewData["VehiculoOriginalId"] = alquilerOriginal.VehiculoId;
+            return View(model);
+        }
+
+        var usuarioId = int.Parse(
+            User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+        try
+        {
+            var nuevoAlquiler = await _alquilerService.ExtenderAsync(
+                model.AlquilerId,
+                model.VehiculoId,
+                usuarioId,
+                model.EntregaExtension,
+                model.DevolucionPrevista);
+
+            TempData["Mensaje"] = $"Extensión registrada correctamente. Nuevo alquiler #{nuevoAlquiler.Id}.";
+
+            return RedirectToAction(nameof(Index));
+        }
+        catch (Exception ex) when (
+            ex is ArgumentException or InvalidOperationException)
+        {
+            ModelState.AddModelError(string.Empty, ex.Message);
+            var alquilerOriginal = await _alquilerService.ObtenerPorIdAsync(model.AlquilerId);
+            if (alquilerOriginal != null)
+            {
+                model.ClienteNombre = $"{alquilerOriginal.Cliente?.Nombre} {alquilerOriginal.Cliente?.Apellido}";
+                model.VehiculoOriginal = $"{alquilerOriginal.Vehiculo?.Marca} {alquilerOriginal.Vehiculo?.Modelo}";
+                model.EstadoOriginal = alquilerOriginal.Estado;
+                model.EntregaExtension = alquilerOriginal.DevolucionPrevista.Date;
+                ViewData["VehiculoOriginalId"] = alquilerOriginal.VehiculoId;
+            }
+            model.Categorias = await _vehiculoRepository.ObtenerCategoriasActivasAsync();
+            return View(model);
+        }
+    }
+
 }

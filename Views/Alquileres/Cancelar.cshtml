@@ -1,1 +1,69 @@
+
+@model alquiler_vehiculos_g11.Models.Alquiler
+
+@{
+    ViewData["Title"] = "Cancelar alquiler";
+    var multa = Model.ImporteTotal * 0.25m;
+}
+
 <h1>Cancelar alquiler</h1>
+
+<div class="alert alert-warning">
+    <strong>Atención:</strong>
+    Esta operación cancelará la reserva y establecerá
+    una multa equivalente al 25 % del importe original.
+</div>
+
+<h4>Datos del alquiler</h4>
+
+<dl class="row">
+    <dt class="col-sm-3">Cliente</dt>
+    <dd class="col-sm-9">
+        @Model.Cliente?.Nombre @Model.Cliente?.Apellido
+    </dd>
+
+    <dt class="col-sm-3">Vehículo</dt>
+    <dd class="col-sm-9">
+        @Model.Vehiculo?.Marca @Model.Vehiculo?.Modelo
+    </dd>
+
+    <dt class="col-sm-3">Entrega prevista</dt>
+    <dd class="col-sm-9">
+        @Model.EntregaPrevista.ToString("dd/MM/yyyy")
+    </dd>
+
+    <dt class="col-sm-3">Devolución prevista</dt>
+    <dd class="col-sm-9">
+        @Model.DevolucionPrevista.ToString("dd/MM/yyyy")
+    </dd>
+
+    <dt class="col-sm-3">Importe original</dt>
+    <dd class="col-sm-9">
+        @Model.ImporteTotal.ToString("C2")
+    </dd>
+
+    <dt class="col-sm-3">Multa por cancelación</dt>
+    <dd class="col-sm-9">
+        <strong>@multa.ToString("C2")</strong>
+    </dd>
+</dl>
+
+<p>
+    La multa será el importe total exigible por la cancelación.
+    Los pagos vigentes que ya se hayan recibido se descontarán
+    para calcular el saldo pendiente.
+</p>
+
+<form asp-action="Cancelar" method="post">
+    <input type="hidden" name="id" value="@Model.Id" />
+
+    <button type="submit" class="btn btn-danger">
+        Confirmar cancelación
+    </button>
+
+    <a asp-action="Details"
+        asp-route-id="@Model.Id"
+        class="btn btn-secondary">
+        Volver
+    </a>
+</form>

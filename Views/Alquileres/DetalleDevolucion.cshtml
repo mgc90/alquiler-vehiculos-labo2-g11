@@ -1,3 +1,4 @@
+@using alquiler_vehiculos_g11.Models.Enums
 @model Alquiler
 
 @{
@@ -6,7 +7,9 @@
     var ar = new System.Globalization.CultureInfo("es-AR");
     string Peso(decimal n) => n.ToString("C", ar);
 
-    var pagado = Model.Pagos.Sum(p => p.Importe);
+    var pagado = Model.Pagos
+    .Where(p => p.Estado == EstadoPago.Vigente)
+    .Sum(p => p.Importe);
 
     var diasContratados = Math.Max(1, (Model.DevolucionPrevista.Date - Model.EntregaPrevista.Date).Days);
     var importeOriginal = Model.PrecioAcordado * diasContratados;

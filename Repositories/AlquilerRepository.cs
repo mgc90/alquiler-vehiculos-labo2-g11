@@ -65,6 +65,7 @@ public class AlquilerRepository : IAlquilerRepository
             .AsNoTracking()
             .Include(alquiler => alquiler.Cliente)
             .Include(alquiler => alquiler.Vehiculo)
+            .Include(alquiler => alquiler.Pagos)
             .FirstOrDefaultAsync(alquiler =>
                 alquiler.Id == alquilerId
                 && alquiler.Estado == EstadoAlquiler.EnCurso

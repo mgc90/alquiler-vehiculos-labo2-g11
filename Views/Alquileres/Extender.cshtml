@@ -1,1 +1,359 @@
+
+@model ExtenderAlquilerViewModel
+
+@{
+    ViewData["Title"] = "Extender alquiler";
+}
+
 <h1>Extender alquiler</h1>
+
+<div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+<form asp-action="Extender" method="post">
+    <input type="hidden" asp-for="AlquilerId" />
+    <input type="hidden" asp-for="VehiculoId" />
+
+    <div class="card mb-3">
+        <div class="card-header">1. Alquiler original</div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <strong>Cliente:</strong>
+                    <p>@Model.ClienteNombre</p>
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Vehículo original:</strong>
+                    <p>@Model.VehiculoOriginal</p>
+                </div>
+
+                <div class="col-md-4">
+                    <strong>Estado:</strong>
+                    <p>@Model.EstadoOriginal</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">2. Nuevo período</div>
+        <div class="card-body row g-3">
+            <div class="col-md-4">
+                <label class="form-label">Entrega de la extensión</label>
+                <input asp-for="EntregaExtension"
+                        type="date"
+                        class="form-control"
+                        readonly />
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="DevolucionPrevista" class="form-label">
+                    Nueva fecha de devolución
+                </label>
+                <input asp-for="DevolucionPrevista"
+                        type="date"
+                        class="form-control" />
+                <span asp-validation-for="DevolucionPrevista"
+                        class="text-danger"></span>
+            </div>
+
+            <div class="col-md-4">
+                <label asp-for="Categorias" class="form-label">
+                    Categoría
+                </label>
+                <select id="CategoriaVehiculoId" class="form-select">
+                    <option value="">Todas</option>
+                    @foreach (var categoria in Model.Categorias)
+                    {
+                        <option value="@categoria.Id">
+                            @categoria.Nombre ($@categoria.PrecioDiario por día)
+                        </option>
+                    }
+                </select>
+            </div>
+
+            <div class="col-12">
+                <button type="button"
+                        class="btn btn-primary"
+                        id="btnBuscarDisponibles">
+                    Buscar vehículos disponibles
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">3. Vehículo para la extensión</div>
+        <div class="card-body">
+            <p id="mensajeDisponibles">
+                El vehículo original aparece seleccionado por defecto.
+                Puede buscar otros vehículos disponibles.
+            </p>
+
+            <span asp-validation-for="VehiculoId"
+                    class="text-danger"></span>
+
+            <table class="table table-sm d-none" id="tablaDisponibles">
+                <thead>
+                    <tr>
+                        <th>Patente</th>
+                        <th>Vehículo</th>
+                        <th>Categoría</th>
+                        <th>Precio</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+
+            <p class="mb-1 mt-2" id="vehiculoSeleccionado"
+                data-original-id="@ViewData["VehiculoOriginalId"]"
+                data-original-descripcion="@Model.VehiculoOriginal">
+                Vehículo original: @Model.VehiculoOriginal
+            </p>
+
+            <div class="d-flex gap-2">
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        id="vehiculosAnterior"
+                        disabled>
+                    Anterior
+                </button>
+
+                <button type="button"
+                        class="btn btn-sm btn-outline-secondary"
+                        id="vehiculosSiguiente"
+                        disabled>
+                    Siguiente
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-success" id="btnConfirmar" disabled>
+        Confirmar extensión
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary">
+        Cancelar
+    </a>
+</form>
+
+@section Scripts {
+    <script>
+        const urlDisponibles = '@Url.Action("Disponibles", "Alquileres")';
+
+        const vehiculoId = document.getElementById('VehiculoId');
+        const alquilerId = document.getElementById('AlquilerId');
+        const fechaEntrega = document.getElementById('EntregaExtension');
+        const fechaDevolucion = document.getElementById('DevolucionPrevista');
+        const categoria = document.getElementById('CategoriaVehiculoId');
+        const btnConfirmar = document.getElementById('btnConfirmar');
+        const vehiculoSeleccionado = document.getElementById('vehiculoSeleccionado');
+
+        const originalId = String(vehiculoSeleccionado.dataset.originalId ?? '');
+        const originalDescripcion = vehiculoSeleccionado.dataset.originalDescripcion ?? '';
+
+        let seleccionId = vehiculoId.value && vehiculoId.value !== '0'
+            ? String(vehiculoId.value)
+            : originalId;
+
+        let seleccionDescripcion = originalDescripcion;
+        let seleccionEsOriginal = seleccionId === originalId;
+
+        const tablaDisponibles = document.getElementById('tablaDisponibles');
+        const mensajeDisponibles = document.getElementById('mensajeDisponibles');
+
+        let paginaVehiculos = 1;
+
+        document.getElementById('btnBuscarDisponibles')
+            .addEventListener('click', async () => {
+                await verificarDisponibilidad(false);
+                buscarDisponibles(1);
+            });
+
+        document.getElementById('vehiculosAnterior')
+            .addEventListener('click', () => buscarDisponibles(paginaVehiculos - 1));
+
+        document.getElementById('vehiculosSiguiente')
+            .addEventListener('click', () => buscarDisponibles(paginaVehiculos + 1));
+
+        fechaDevolucion.addEventListener('change', async () => {
+            tablaDisponibles.classList.add('d-none');
+            await verificarDisponibilidad(true);
+        });
+
+        function escapar(valor) {
+            return String(valor ?? '').replace(/[&<>"']/g, caracter => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#39;'
+            }[caracter]));
+        }
+
+        function cantidadPaginas(totalRegistros, tamanioPagina) {
+            return Math.max(1, Math.ceil(totalRegistros / tamanioPagina));
+        }
+
+        function aplicarEstadoSeleccion(disponible, textoSeleccion) {
+            vehiculoId.value = seleccionId;
+            btnConfirmar.disabled = !disponible;
+            vehiculoSeleccionado.textContent = textoSeleccion;
+        }
+
+        async function verificarDisponibilidad(mostrarMensajeExito) {
+            const entrega = fechaEntrega.value;
+            const devolucion = fechaDevolucion.value;
+
+            if (!entrega || !devolucion || devolucion <= entrega) {
+                aplicarEstadoSeleccion(
+                    false, `Vehículo seleccionado: ${seleccionDescripcion}.`
+                );
+
+                mensajeDisponibles.textContent = 'La nueva fecha de devolución debe ser posterior al inicio de la extensión.';
+                return;
+            }
+
+            if (!seleccionId) {
+                aplicarEstadoSeleccion(false, 'No hay un vehículo seleccionado.');
+                mensajeDisponibles.textContent = 'Seleccione un vehículo para continuar.';
+                return;
+            }
+
+            const parametros = new URLSearchParams({
+                entregaPrevista: entrega,
+                devolucionPrevista: devolucion,
+                alquilerExcluirId: alquilerId.value,
+                vehiculoId: seleccionId
+            });
+
+            try {
+                const respuesta = await fetch(`${urlDisponibles}?${parametros}`);
+
+                if (!respuesta.ok) {
+                    let mensaje = 'No se pudo verificar la disponibilidad del vehículo.';
+
+                    try {
+                        const error = await respuesta.json();
+                        mensaje = error.mensaje ?? mensaje;
+                    } catch {
+                    }
+                    aplicarEstadoSeleccion(
+                        false,
+                        `Vehículo seleccionado: ${seleccionDescripcion} — sin verificar.`
+                    );
+                    mensajeDisponibles.textContent = mensaje;
+                    return;
+                }
+                const data = await respuesta.json();
+                const vehiculo = data.vehiculo;
+
+                seleccionDescripcion = `${vehiculo.patente} ${vehiculo.marca} ${vehiculo.modelo}`;
+                seleccionEsOriginal = String(vehiculo.id) === originalId;
+
+                if (data.disponible) {
+                    aplicarEstadoSeleccion(
+                        true, `Vehículo seleccionado: ${seleccionDescripcion} — disponible para el nuevo período.`
+                    );
+                    if (mostrarMensajeExito) {
+                        mensajeDisponibles.textContent = 'El vehículo seleccionado está disponible para las fechas de la extensión.';
+                    }
+                } else {
+                    aplicarEstadoSeleccion(
+                        false, `Vehículo seleccionado: ${seleccionDescripcion} — NO disponible para el nuevo período. Elija otro vehículo de la lista.`
+                    );
+                    mensajeDisponibles.textContent ='El vehículo seleccionado no está disponible para estas fechas. Busque y seleccione otro vehículo disponible.';
+                }
+            } catch {
+                aplicarEstadoSeleccion(
+                    false, `Vehículo seleccionado: ${seleccionDescripcion} — sin verificar.`
+                );
+                mensajeDisponibles.textContent = 'Ocurrió un error al consultar la disponibilidad. Intente nuevamente.';
+            }
+        }
+        async function buscarDisponibles(pagina) {
+            const entrega = fechaEntrega.value;
+            const devolucion = fechaDevolucion.value;
+            if (!entrega || !devolucion || devolucion <= entrega) {
+                mensajeDisponibles.textContent ='La nueva fecha de devolución debe ser posterior a la fecha de inicio de la extensión.';
+                tablaDisponibles.classList.add('d-none');
+                return;
+            }
+            const parametros = new URLSearchParams({
+                entregaPrevista: entrega,
+                devolucionPrevista: devolucion,
+                pagina: Math.max(1, pagina),
+                alquilerExcluirId: alquilerId.value
+            });
+            if (categoria.value) {
+                parametros.append('categoriaVehiculoId', categoria.value);
+            }
+            const respuesta = await fetch(`${urlDisponibles}?${parametros}`);
+
+            if (!respuesta.ok) {
+                const error = await respuesta.json();
+                mensajeDisponibles.textContent = error.mensaje ?? 'No se pudo buscar disponibilidad.';
+
+                tablaDisponibles.classList.add('d-none');
+                return;
+            }
+            const data = await respuesta.json();
+            paginaVehiculos = data.pagina;
+            const totalPaginas = cantidadPaginas(
+                data.totalRegistros,
+                data.tamanioPagina
+            );
+
+            document.getElementById('vehiculosAnterior').disabled =
+                data.pagina <= 1;
+
+            document.getElementById('vehiculosSiguiente').disabled =
+                data.pagina >= totalPaginas;
+
+            if (data.elementos.length === 0) {
+                mensajeDisponibles.textContent = 'No hay vehículos disponibles para esas fechas y categoría.';
+                tablaDisponibles.classList.add('d-none');
+                return;
+            }
+
+            mensajeDisponibles.textContent = `${data.totalRegistros} vehículo(s) disponible(s) — página ${data.pagina} de ${totalPaginas}`;
+            tablaDisponibles.classList.remove('d-none');
+
+            tablaDisponibles.querySelector('tbody').innerHTML =
+                data.elementos.map(vehiculo => `
+                    <tr>
+                        <td>${escapar(vehiculo.patente)}</td>
+                        <td>${escapar(vehiculo.marca)} ${escapar(vehiculo.modelo)}</td>
+                        <td>${escapar(vehiculo.categoria)}</td>
+                        <td>$${Number(vehiculo.precioDiario).toLocaleString('es-AR')} / día</td>
+                        <td>
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-primary"
+                                    data-vehiculo="${vehiculo.id}"
+                                    data-descripcion="${escapar(vehiculo.patente)} ${escapar(vehiculo.marca)} ${escapar(vehiculo.modelo)}">
+                                Elegir
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+
+            tablaDisponibles.querySelectorAll('button[data-vehiculo]')
+                .forEach(boton => {
+                    boton.addEventListener('click', () => {
+                        seleccionId = String(boton.dataset.vehiculo);
+                        seleccionDescripcion = boton.dataset.descripcion;
+                        seleccionEsOriginal = seleccionId === originalId;
+                        aplicarEstadoSeleccion(
+                            true,
+                            seleccionEsOriginal
+                                ? `Vehículo original: ${seleccionDescripcion} — seleccionado.`
+                                : `Vehículo seleccionado: ${seleccionDescripcion} — seleccionado.`);
+                    });
+                });
+        }
+
+        verificarDisponibilidad(true);
+    </script>
+}

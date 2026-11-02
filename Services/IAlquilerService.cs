@@ -4,20 +4,22 @@ namespace alquiler_vehiculos_g11.Services;
 
 public interface IAlquilerService
 {
-    
+    Task<Alquiler?> ObtenerPorIdAsync(int id);
     Task<ResultadoPaginado<Vehiculo>> BuscarDisponiblesAsync(
         DateTime entregaPrevista,
         DateTime devolucionPrevista,
         int? categoriaVehiculoId,
         int pagina,
-        int tamanioPagina);
+        int tamanioPagina,
+        int? alquilerExcluirId = null);
 
     Task<Alquiler> CrearReservaAsync(
         int clienteId,
         int vehiculoId,
         int usuarioId,
         DateTime entregaPrevista,
-        DateTime devolucionPrevista);
+        DateTime devolucionPrevista,
+        int? alquilerExcluirId = null);
 
     Task<Alquiler> EntregarVehiculoAsync(int alquilerId, DateTime entregaReal);
 
@@ -43,6 +45,7 @@ public interface IAlquilerService
 
     Task<Alquiler> ExtenderAsync(
         int alquilerId,
+        int vehiculoId,
         int usuarioId,
         DateTime entregaPrevista,
         DateTime devolucionPrevista);

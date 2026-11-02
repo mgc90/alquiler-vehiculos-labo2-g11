@@ -50,7 +50,8 @@ public class VehiculoRepository : IVehiculoRepository
         DateTime devolucionPrevista,
         int? categoriaVehiculoId,
         int pagina,
-        int tamanioPagina)
+        int tamanioPagina,
+        int? alquilerExcluirId = null)
     {
         var (inicioPeriodo, finPeriodoExclusivo) = RangoDias(entregaPrevista, devolucionPrevista);
         var consulta = _context.Vehiculos
@@ -61,6 +62,7 @@ public class VehiculoRepository : IVehiculoRepository
             .Where(vehiculo => !_context.Alquileres.Any(alquiler =>
                 alquiler.VehiculoId == vehiculo.Id
                 && (alquiler.Estado == EstadoAlquiler.Reservado || alquiler.Estado == EstadoAlquiler.EnCurso)
+                && (alquilerExcluirId == null || alquiler.Id != alquilerExcluirId.Value)
                 && alquiler.EntregaPrevista < finPeriodoExclusivo
                 && alquiler.DevolucionPrevista >= inicioPeriodo))
             .OrderBy(vehiculo => vehiculo.Patente);
@@ -71,10 +73,11 @@ public class VehiculoRepository : IVehiculoRepository
     public Task<bool> EsDisponibleAsync(
         int vehiculoId,
         DateTime entregaPrevista,
-        DateTime devolucionPrevista)
+        DateTime devolucionPrevista,
+        int? alquilerExcluirId = null)
     {
-        var (inicioPeriodo, finPeriodoExclusivo) = RangoDias(entregaPrevista, devolucionPrevista);
-
+        var (inicioPeriodo, finPeriodoExclusivo) =
+            RangoDias(entregaPrevista, devolucionPrevista);
         return _context.Vehiculos
             .AsNoTracking()
             .AnyAsync(vehiculo =>
@@ -82,7 +85,10 @@ public class VehiculoRepository : IVehiculoRepository
                 && vehiculo.EstadoOperativo == EstadoOperativoVehiculo.Habilitado
                 && !_context.Alquileres.Any(alquiler =>
                     alquiler.VehiculoId == vehiculo.Id
-                    && (alquiler.Estado == EstadoAlquiler.Reservado || alquiler.Estado == EstadoAlquiler.EnCurso)
+                    && (alquiler.Estado == EstadoAlquiler.Reservado
+                        || alquiler.Estado == EstadoAlquiler.EnCurso)
+                    && (alquilerExcluirId == null
+                        || alquiler.Id != alquilerExcluirId.Value)
                     && alquiler.EntregaPrevista < finPeriodoExclusivo
                     && alquiler.DevolucionPrevista >= inicioPeriodo));
     }
