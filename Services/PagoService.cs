@@ -73,14 +73,17 @@ public class PagoService : IPagoService
                 "Un alquiler cancelado solo admite pagos correspondientes a multas.");
         }
 
+        if (tipo == TipoPago.Seña
+            && alquiler.Estado != EstadoAlquiler.Reservado)
+        {
+            throw new InvalidOperationException(
+                "La seña solo puede registrarse al momento de crear la reserva.");
+        }
+
         var totalPagado = await _pagoRepository
             .ObtenerTotalVigentePorAlquilerAsync(alquilerId);
 
-        var importeExigible = alquiler.Estado == EstadoAlquiler.Cancelado
-            ? alquiler.Multa
-            : alquiler.ImporteTotal;
-
-        var saldoPendiente = importeExigible - totalPagado;
+        var saldoPendiente = alquiler.TotalExigible - totalPagado;
 
         if (saldoPendiente <= 0)
         {
@@ -92,6 +95,34 @@ public class PagoService : IPagoService
         {
             throw new InvalidOperationException(
                 $"El importe supera el saldo pendiente de {saldoPendiente:C2}.");
+        }
+
+        var cargosPendientes = 0m;
+
+        if (alquiler.Multa > 0)
+        {
+            var cargosPagados = await _pagoRepository
+                .ObtenerTotalVigentePorTiposAsync(
+                    alquilerId,
+                    TipoPago.Multa,
+                    TipoPago.Recargo);
+
+            cargosPendientes = Math.Max(
+                0m,
+                Math.Min(alquiler.Multa - cargosPagados, saldoPendiente));
+        }
+
+        if (cargosPendientes > 0 && importe < cargosPendientes)
+        {
+            throw new InvalidOperationException(
+                $"El importe no puede ser menor que los cargos adicionales pendientes de {cargosPendientes:C2}.");
+        }
+
+        if (tipo is TipoPago.Multa or TipoPago.Recargo
+            && cargosPendientes <= 0)
+        {
+            throw new InvalidOperationException(
+                "El alquiler no tiene cargos adicionales pendientes.");
         }
 
         var pago = new Pago

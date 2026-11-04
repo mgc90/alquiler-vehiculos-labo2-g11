@@ -1,1 +1,108 @@
-<h1>Detalle de pago</h1>
+@using alquiler_vehiculos_g11.Models.Enums
+@model alquiler_vehiculos_g11.Models.ViewModels.PagoDetalleViewModel
+
+@{
+    ViewData["Title"] = "Detalle del pago";
+
+    var pago = Model.Pago;
+    var alquiler = Model.Alquiler;
+}
+
+<h1>Pago N.º @pago.Id</h1>
+
+<div class="card mb-3">
+    <div class="card-header">Datos del pago</div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-4">Alquiler</dt>
+            <dd class="col-sm-8">
+                <a asp-controller="Alquileres" asp-action="Details"
+                   asp-route-id="@pago.AlquilerId">#@pago.AlquilerId</a>
+            </dd>
+
+            <dt class="col-sm-4">Fecha</dt>
+            <dd class="col-sm-8">@pago.Fecha.ToString("dd/MM/yyyy HH:mm")</dd>
+
+            <dt class="col-sm-4">Tipo</dt>
+            <dd class="col-sm-8">@pago.Tipo</dd>
+
+            <dt class="col-sm-4">Medio de pago</dt>
+            <dd class="col-sm-8">@pago.MedioPago</dd>
+
+            <dt class="col-sm-4">Importe</dt>
+            <dd class="col-sm-8">@pago.Importe.ToString("C2")</dd>
+
+            <dt class="col-sm-4">Estado</dt>
+            <dd class="col-sm-8">@pago.Estado</dd>
+
+            <dt class="col-sm-4">Registrado por</dt>
+            <dd class="col-sm-8">@(pago.CreadoPorUsuario?.UserName ?? "-")</dd>
+
+            @if (pago.Estado == EstadoPago.Anulado)
+            {
+                <dt class="col-sm-4">Fecha de anulación</dt>
+                <dd class="col-sm-8">@(pago.FechaAnulacion?.ToString("dd/MM/yyyy HH:mm") ?? "-")</dd>
+
+                <dt class="col-sm-4">Anulado por</dt>
+                <dd class="col-sm-8">@(pago.AnuladoPorUsuario?.UserName ?? "-")</dd>
+            }
+        </dl>
+    </div>
+</div>
+
+@if (alquiler != null)
+{
+    <div class="card mb-3">
+        <div class="card-header">Resumen del alquiler #@alquiler.Id</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-8">Importe original</dt>
+                <dd class="col-sm-4 text-end">@alquiler.ImporteTotal.ToString("C2")</dd>
+
+                @if (alquiler.ImporteUsoEfectivo > 0)
+                {
+                    <dt class="col-sm-8">Importe de uso efectivo</dt>
+                    <dd class="col-sm-4 text-end">@alquiler.ImporteUsoEfectivo.ToString("C2")</dd>
+                }
+
+                @if (alquiler.MultaCancelacion > 0)
+                {
+                    <dt class="col-sm-8">Multa por cancelación</dt>
+                    <dd class="col-sm-4 text-end">@alquiler.MultaCancelacion.ToString("C2")</dd>
+                }
+
+                @if (alquiler.OtrosCargos > 0)
+                {
+                    <dt class="col-sm-8">Otros cargos adicionales</dt>
+                    <dd class="col-sm-4 text-end">@alquiler.OtrosCargos.ToString("C2")</dd>
+                }
+
+                <dt class="col-sm-8">Total exigible</dt>
+                <dd class="col-sm-4 text-end fw-bold">@alquiler.TotalExigible.ToString("C2")</dd>
+
+                <dt class="col-sm-8">Pagos vigentes</dt>
+                <dd class="col-sm-4 text-end">@Model.PagosVigentes.ToString("C2")</dd>
+
+                <dt class="col-sm-8">Saldo pendiente</dt>
+                <dd class="col-sm-4 text-end fw-bold @(Model.SaldoPendiente > 0 ? "text-danger" : "text-success")">
+                    @Model.SaldoPendiente.ToString("C2")
+                </dd>
+            </dl>
+        </div>
+    </div>
+}
+
+<div class="d-flex gap-2">
+    <a asp-controller="Alquileres" asp-action="Details"
+       asp-route-id="@pago.AlquilerId" class="btn btn-secondary">
+        Volver al alquiler
+    </a>
+
+    <a asp-action="Index" class="btn btn-outline-secondary">Volver a pagos</a>
+
+    @if (pago.Estado == EstadoPago.Vigente)
+    {
+        <a asp-action="Anular" asp-route-id="@pago.Id"
+           class="btn btn-danger">Anular pago</a>
+    }
+</div>

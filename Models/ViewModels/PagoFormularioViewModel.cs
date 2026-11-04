@@ -18,4 +18,16 @@ public class PagoFormularioViewModel
 
     [Required(ErrorMessage = "Debe seleccionar un medio de pago.")]
     public string MedioPago { get; set; } = string.Empty;
+
+    public decimal ImporteExigible { get; set; }
+
+    public decimal ImporteOriginal { get; set; }
+
+    public decimal Multa { get; set; }
+
+    public decimal SaldoPendiente { get; set; }
+
+    public decimal CargosPendientes { get; set; }
+
+    public EstadoAlquiler EstadoAlquiler { get; set; }
 }

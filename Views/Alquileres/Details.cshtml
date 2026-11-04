@@ -1,19 +1,245 @@
+@using alquiler_vehiculos_g11.Models.Enums
+@model Alquiler
+
 @{
     ViewData["Title"] = "Detalle del alquiler";
+
+    var pagosVigentes = Model.Pagos
+        .Where(p => p.Estado == EstadoPago.Vigente)
+        .OrderByDescending(p => p.Fecha)
+        .ToList();
+
+    var pagado = Model.PagosVigentes;
+    var totalExigible = Model.TotalExigible;
+    var saldo = Model.SaldoPendiente;
+    var multaCancelacion = Model.MultaCancelacion;
+    var otrosCargos = Model.OtrosCargos;
+    var usoEfectivo = Model.ImporteUsoEfectivo;
+
+    var puedeCancelar = Model.Estado == EstadoAlquiler.Reservado &&
+                        Model.EntregaReal == null;
+
+    var puedeExtender = (Model.Estado == EstadoAlquiler.Reservado ||
+                         Model.Estado == EstadoAlquiler.EnCurso) &&
+                        Model.DevolucionPrevista.Date >= DateTime.Today;
+
+    var esAdministrador = User.IsInRole("Administrador");
 }
 
-<h1>Detalle del alquiler</h1>
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Alquiler N.º @Model.Id</h1>
+    <span class="badge bg-secondary fs-6">@Model.Estado</span>
+</div>
 
-@if (TempData["Mensaje"] != null)
+@if (TempData["Mensaje"] is string mensaje)
 {
-    <div class="alert alert-success">
-        @TempData["Mensaje"]
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @mensaje
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
 }
 
-@if (TempData["Error"] != null)
+@if (TempData["Error"] is string error)
 {
-    <div class="alert alert-danger">
-        @TempData["Error"]
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @error
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
 }
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">Datos generales</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Cliente</dt>
+                    <dd class="col-sm-7">
+                        @Model.Cliente?.Apellido, @Model.Cliente?.Nombre
+                        @if (!string.IsNullOrWhiteSpace(Model.Cliente?.Dni))
+                        {
+                            <span>(DNI @Model.Cliente.Dni)</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-5">Vehículo</dt>
+                    <dd class="col-sm-7">
+                        @Model.Vehiculo?.Marca @Model.Vehiculo?.Modelo
+                        (@Model.Vehiculo?.Patente)
+                    </dd>
+
+                    <dt class="col-sm-5">Categoría</dt>
+                    <dd class="col-sm-7">@Model.Vehiculo?.CategoriaVehiculo?.Nombre</dd>
+
+                    <dt class="col-sm-5">Precio acordado</dt>
+                    <dd class="col-sm-7">@Model.PrecioAcordado.ToString("C2") por día</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card mb-3">
+            <div class="card-header">Fechas</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-6">Entrega prevista</dt>
+                    <dd class="col-sm-6">@Model.EntregaPrevista.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-6">Entrega real</dt>
+                    <dd class="col-sm-6">@(Model.EntregaReal?.ToString("dd/MM/yyyy HH:mm") ?? "-")</dd>
+
+                    <dt class="col-sm-6">Devolución prevista</dt>
+                    <dd class="col-sm-6">@Model.DevolucionPrevista.ToString("dd/MM/yyyy")</dd>
+
+                    <dt class="col-sm-6">Devolución real</dt>
+                    <dd class="col-sm-6">@(Model.DevolucionReal?.ToString("dd/MM/yyyy HH:mm") ?? "-")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-header">Importes</div>
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-8">Importe original del alquiler</dt>
+            <dd class="col-sm-4 text-end">@Model.ImporteTotal.ToString("C2")</dd>
+
+            @if (usoEfectivo > 0)
+            {
+                <dt class="col-sm-8">Importe de uso efectivo</dt>
+                <dd class="col-sm-4 text-end">@usoEfectivo.ToString("C2")</dd>
+            }
+
+            @if (multaCancelacion > 0)
+            {
+                <dt class="col-sm-8">Multa por cancelación</dt>
+                <dd class="col-sm-4 text-end">@multaCancelacion.ToString("C2")</dd>
+            }
+
+            @if (otrosCargos > 0)
+            {
+                <dt class="col-sm-8">Otros cargos adicionales (demora / daños)</dt>
+                <dd class="col-sm-4 text-end">@otrosCargos.ToString("C2")</dd>
+            }
+
+            <dt class="col-sm-8">Total exigible</dt>
+            <dd class="col-sm-4 text-end fw-bold">@totalExigible.ToString("C2")</dd>
+
+            <dt class="col-sm-8">Pagos vigentes</dt>
+            <dd class="col-sm-4 text-end">@pagado.ToString("C2")</dd>
+
+            <dt class="col-sm-8">Saldo pendiente</dt>
+            <dd class="col-sm-4 text-end fw-bold @(saldo > 0 ? "text-danger" : "text-success")">
+                @saldo.ToString("C2")
+            </dd>
+        </dl>
+    </div>
+</div>
+
+@if (!string.IsNullOrWhiteSpace(Model.Observaciones))
+{
+    <div class="card mb-3">
+        <div class="card-header">Observaciones</div>
+        <div class="card-body">@Model.Observaciones</div>
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="card-header">Pagos</div>
+    <div class="card-body">
+        @if (Model.Pagos.Count == 0)
+        {
+            <p class="mb-0">El alquiler no tiene pagos registrados.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th>N.º</th>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Medio</th>
+                            <th class="text-end">Importe</th>
+                            <th>Estado</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var pago in Model.Pagos.OrderByDescending(p => p.Fecha))
+                        {
+                            <tr class="@(pago.Estado == EstadoPago.Anulado ? "table-secondary" : string.Empty)">
+                                <td>@pago.Id</td>
+                                <td>@pago.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td>@pago.Tipo</td>
+                                <td>@pago.MedioPago</td>
+                                <td class="text-end">@pago.Importe.ToString("C2")</td>
+                                <td>@pago.Estado</td>
+                                <td class="text-end text-nowrap">
+                                    <a asp-controller="Pagos" asp-action="Details"
+                                       asp-route-id="@pago.Id"
+                                       class="btn btn-sm btn-outline-primary">Detalle</a>
+
+                                    @if (pago.Estado == EstadoPago.Vigente)
+                                    {
+                                        <a asp-controller="Pagos" asp-action="Anular"
+                                           asp-route-id="@pago.Id"
+                                           class="btn btn-sm btn-outline-danger">Anular</a>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>
+
+@if (esAdministrador)
+{
+    <div class="card mb-3">
+        <div class="card-header">Auditoría</div>
+        <div class="card-body">
+            <dl class="row mb-0">
+                <dt class="col-sm-4">Creado por</dt>
+                <dd class="col-sm-8">@(Model.CreadoPorUsuario?.UserName ?? "-")</dd>
+
+                <dt class="col-sm-4">Cerrado por</dt>
+                <dd class="col-sm-8">@(Model.CerradoPorUsuario?.UserName ?? "-")</dd>
+            </dl>
+        </div>
+    </div>
+}
+
+<div class="d-flex flex-wrap gap-2">
+    <a asp-action="Index" class="btn btn-secondary">Volver a alquileres</a>
+
+    @if (saldo > 0)
+    {
+        <a asp-controller="Pagos" asp-action="Registrar"
+           asp-route-alquilerId="@Model.Id"
+           class="btn btn-success">Registrar pago</a>
+    }
+
+    @if (puedeCancelar)
+    {
+        <a asp-action="Cancelar" asp-route-id="@Model.Id"
+           class="btn btn-danger">Cancelar alquiler</a>
+    }
+
+    @if (puedeExtender)
+    {
+        <a asp-action="Extender" asp-route-id="@Model.Id"
+           class="btn btn-outline-secondary">Extender alquiler</a>
+    }
+
+    @if (Model.Estado == EstadoAlquiler.EnCurso)
+    {
+        <a asp-action="Devolver" class="btn btn-outline-info">Registrar devolución</a>
+    }
+</div>

@@ -77,7 +77,10 @@ public class AlquilerRepository : IAlquilerRepository
         .IgnoreQueryFilters()
         .Include(alquiler => alquiler.Cliente)
         .Include(alquiler => alquiler.Vehiculo)
+            .ThenInclude(vehiculo => vehiculo!.CategoriaVehiculo)
         .Include(alquiler => alquiler.Pagos)
+        .Include(alquiler => alquiler.CreadoPorUsuario)
+        .Include(alquiler => alquiler.CerradoPorUsuario)
         .FirstOrDefaultAsync(alquiler => alquiler.Id == alquilerId);
 
     public async Task AgregarAsync(Alquiler entity)
@@ -100,6 +103,7 @@ public class AlquilerRepository : IAlquilerRepository
         int tamanioPagina)
     {
         var consulta = CrearConsultaBase()
+            .Include(alquiler => alquiler.Pagos)
             .Where(alquiler => estado == null || alquiler.Estado == estado)
             .Where(alquiler => clienteId == null || alquiler.ClienteId == clienteId)
             .Where(alquiler => vehiculoId == null || alquiler.VehiculoId == vehiculoId)

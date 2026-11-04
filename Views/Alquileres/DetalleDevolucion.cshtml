@@ -7,15 +7,37 @@
     var ar = new System.Globalization.CultureInfo("es-AR");
     string Peso(decimal n) => n.ToString("C", ar);
 
-    var pagado = Model.Pagos
-    .Where(p => p.Estado == EstadoPago.Vigente)
-    .Sum(p => p.Importe);
+    var pagado = Model.PagosVigentes;
+    var totalExigible = Model.TotalExigible;
+    var saldo = Model.SaldoPendiente;
 
-    var diasContratados = Math.Max(1, (Model.DevolucionPrevista.Date - Model.EntregaPrevista.Date).Days);
-    var importeOriginal = Model.PrecioAcordado * diasContratados;
-    var diasDemora = Model.PrecioAcordado > 0 ? (int)(Model.Multa / Model.PrecioAcordado) : 0;
-    var costosDanios = Model.ImporteTotal - importeOriginal - Model.Multa;
-    var saldo = Model.ImporteTotal - pagado;
+    var esAnticipada = Model.EsCancelacionPosteriorAlRetiro;
+    var diasContratados = CalculoImportesAlquiler.DiasContratados(
+        Model.EntregaPrevista,
+        Model.DevolucionPrevista);
+
+    var diasUso = Model.EntregaReal.HasValue && Model.DevolucionReal.HasValue
+        ? CalculoImportesAlquiler.DiasUso(
+            Model.EntregaReal.Value,
+            Model.DevolucionReal.Value)
+        : diasContratados;
+
+    var diasRestantes = Math.Max(0, diasContratados - diasUso);
+    var porcentaje = CalculoImportesAlquiler.PorcentajeMultaDiasRestantes(
+        diasContratados,
+        diasUso);
+
+    var importeUso = Model.ImporteUsoEfectivo;
+    var multaCancelacion = Model.MultaCancelacion;
+    var otrosCargos = Model.OtrosCargos;
+
+    var diasDemora = 0;
+    if (!esAnticipada && Model.DevolucionReal.HasValue)
+    {
+        diasDemora = CalculoImportesAlquiler.DiasDemora(
+            Model.DevolucionPrevista,
+            Model.DevolucionReal.Value);
+    }
 }
 
 <h1>Detalle de la devolución</h1>
@@ -23,6 +45,15 @@
 <div class="alert alert-success">
     Devolución registrada correctamente. Estado del alquiler: <strong>@Model.Estado</strong>.
 </div>
+
+@if (esAnticipada)
+{
+    <div class="alert alert-warning">
+        La devolución fue anticipada: se cobró el uso efectivo de @diasUso día(s)
+        y una multa del @((porcentaje * 100).ToString("0")) % sobre los @diasRestantes día(s) restantes.
+        El importe original del alquiler se conserva solo como referencia y no se cobra completo.
+    </div>
+}
 
 <div class="row justify-content-center">
     <div class="col-md-6">
@@ -56,8 +87,17 @@
                     <dd class="col-sm-6">@Model.DevolucionPrevista.ToString("dd/MM/yyyy")</dd>
                     <dt class="col-sm-6">Devolución real</dt>
                     <dd class="col-sm-6">@(Model.DevolucionReal?.ToString("dd/MM/yyyy HH:mm") ?? "-")</dd>
-                    <dt class="col-sm-6">Días de demora</dt>
-                    <dd class="col-sm-6">@(diasDemora > 0 ? $"{diasDemora} día/s" : "Sin demora")</dd>
+
+                    @if (esAnticipada)
+                    {
+                        <dt class="col-sm-6">Días de uso</dt>
+                        <dd class="col-sm-6">@diasUso día/s (devolución anticipada)</dd>
+                    }
+                    else
+                    {
+                        <dt class="col-sm-6">Días de demora</dt>
+                        <dd class="col-sm-6">@(diasDemora > 0 ? $"{diasDemora} día/s" : "Sin demora")</dd>
+                    }
                 </dl>
             </div>
         </div>
@@ -70,19 +110,34 @@
             <div class="card-header">Resumen del importe</div>
             <div class="card-body">
                 <dl class="row mb-0">
-                    <dt class="col-sm-8">Importe original (@diasContratados día/s × @Peso(Model.PrecioAcordado))</dt>
-                    <dd class="col-sm-4 text-end">@Peso(importeOriginal)</dd>
+                    <dt class="col-sm-8">Importe original del alquiler</dt>
+                    <dd class="col-sm-4 text-end">@Peso(Model.ImporteTotal)</dd>
 
-                    <dt class="col-sm-8">Recargo por demora</dt>
-                    <dd class="col-sm-4 text-end">@Peso(Model.Multa)</dd>
+                    @if (esAnticipada)
+                    {
+                        <dt class="col-sm-8">
+                            Importe de uso efectivo
+                            <span>(@diasUso día/s × @Peso(Model.PrecioAcordado))</span>
+                        </dt>
+                        <dd class="col-sm-4 text-end">@Peso(importeUso)</dd>
 
-                    <dt class="col-sm-8">Costos por daños</dt>
-                    <dd class="col-sm-4 text-end">@Peso(costosDanios)</dd>
+                        <dt class="col-sm-8">
+                            Multa por cancelación
+                            <span>(@((porcentaje * 100).ToString("0")) % de @diasRestantes día/s restantes)</span>
+                        </dt>
+                        <dd class="col-sm-4 text-end">@Peso(multaCancelacion)</dd>
+                    }
 
-                    <dt class="col-sm-8">Importe total</dt>
-                    <dd class="col-sm-4 text-end fw-bold">@Peso(Model.ImporteTotal)</dd>
+                    @if (otrosCargos > 0)
+                    {
+                        <dt class="col-sm-8">Otros cargos adicionales (demora / daños)</dt>
+                        <dd class="col-sm-4 text-end">@Peso(otrosCargos)</dd>
+                    }
 
-                    <dt class="col-sm-8">Pagos realizados</dt>
+                    <dt class="col-sm-8">Total exigible</dt>
+                    <dd class="col-sm-4 text-end fw-bold">@Peso(totalExigible)</dd>
+
+                    <dt class="col-sm-8">Pagos vigentes</dt>
                     <dd class="col-sm-4 text-end">@Peso(pagado)</dd>
 
                     <dt class="col-sm-8">Saldo pendiente</dt>
@@ -102,6 +157,9 @@
         }
 
         <div class="d-flex gap-2">
+            <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary">
+                Ver alquiler
+            </a>
             <a asp-action="Index" class="btn btn-secondary">Volver a alquileres</a>
             <a asp-action="Devolver" class="btn btn-outline-primary">Registrar otra devolución</a>
         </div>

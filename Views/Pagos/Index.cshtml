@@ -1,1 +1,136 @@
-<h1>Pagos</h1>
+@using alquiler_vehiculos_g11.Models.Enums
+@model alquiler_vehiculos_g11.Models.ViewModels.PagosIndexViewModel
+
+@{
+    ViewData["Title"] = "Pagos";
+
+    var totalPaginas = Math.Max(
+        1,
+        (int)Math.Ceiling(
+            Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina));
+    var paginaActual = Model.Resultado.Pagina;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Pagos</h1>
+</div>
+
+@if (TempData["Mensaje"] is string mensaje)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        @mensaje
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+
+@if (TempData["Error"] is string error)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        @error
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+    </div>
+}
+
+<form method="get" class="card mb-3">
+    <div class="card-body row g-3 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label" for="estado">Estado</label>
+            <select id="estado" name="estado" class="form-select">
+                <option value="">Todos</option>
+                @foreach (var valor in Enum.GetValues<EstadoPago>())
+                {
+                    <option value="@valor" selected="@(Model.Estado == valor)">@valor</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label" for="alquilerId">Alquiler (ID)</label>
+            <input id="alquilerId" name="alquilerId" type="number" min="1"
+                   value="@Model.AlquilerId" class="form-control" />
+        </div>
+
+        <div class="col-md-4 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a asp-action="Index" class="btn btn-secondary">Limpiar</a>
+        </div>
+    </div>
+</form>
+
+@if (Model.Resultado.Elementos.Count == 0)
+{
+    <div class="alert alert-info">No se encontraron pagos con los filtros indicados.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>N.º</th>
+                    <th>Fecha</th>
+                    <th>Alquiler</th>
+                    <th>Tipo</th>
+                    <th>Medio</th>
+                    <th class="text-end">Importe</th>
+                    <th>Estado</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var pago in Model.Resultado.Elementos)
+                {
+                    <tr class="@(pago.Estado == EstadoPago.Anulado ? "table-secondary" : string.Empty)">
+                        <td>@pago.Id</td>
+                        <td>@pago.Fecha.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td>
+                            <a asp-controller="Alquileres" asp-action="Details"
+                               asp-route-id="@pago.AlquilerId">#@pago.AlquilerId</a>
+                        </td>
+                        <td>@pago.Tipo</td>
+                        <td>@pago.MedioPago</td>
+                        <td class="text-end">@pago.Importe.ToString("C2")</td>
+                        <td>@pago.Estado</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Details" asp-route-id="@pago.Id"
+                               class="btn btn-sm btn-outline-primary">Detalle</a>
+
+                            @if (pago.Estado == EstadoPago.Vigente)
+                            {
+                                <a asp-action="Anular" asp-route-id="@pago.Id"
+                                   class="btn btn-sm btn-outline-danger">Anular</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Paginación de pagos">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(paginaActual <= 1 ? "disabled" : string.Empty)">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-estado="@Model.Estado"
+                   asp-route-alquilerId="@Model.AlquilerId"
+                   asp-route-pagina="@(paginaActual - 1)">Anterior</a>
+            </li>
+
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Página @paginaActual de @totalPaginas
+                    (@Model.Resultado.TotalRegistros registros)
+                </span>
+            </li>
+
+            <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : string.Empty)">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-estado="@Model.Estado"
+                   asp-route-alquilerId="@Model.AlquilerId"
+                   asp-route-pagina="@(paginaActual + 1)">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
+}

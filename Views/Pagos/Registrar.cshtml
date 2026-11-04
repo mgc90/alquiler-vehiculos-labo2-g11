@@ -20,6 +20,41 @@
         @TempData["Error"]
     </div>
 }
+
+<div class="alert alert-info">
+    <div>
+        Alquiler
+        <a asp-controller="Alquileres" asp-action="Details"
+           asp-route-id="@Model.AlquilerId">#@Model.AlquilerId</a>
+        — Estado: <strong>@Model.EstadoAlquiler</strong>
+    </div>
+    <div>Importe original: <strong>@Model.ImporteOriginal.ToString("C2")</strong></div>
+    @if (Model.Multa > 0)
+    {
+        <div>Cargos adicionales (multa / recargo / daños): <strong>@Model.Multa.ToString("C2")</strong></div>
+    }
+    <div>Total exigible: <strong>@Model.ImporteExigible.ToString("C2")</strong></div>
+    <div>Saldo pendiente: <strong>@Model.SaldoPendiente.ToString("C2")</strong></div>
+    @if (Model.CargosPendientes > 0)
+    {
+        <div>
+            Cargos adicionales pendientes: <strong>@Model.CargosPendientes.ToString("C2")</strong>.
+            @if (Model.CargosPendientes < Model.SaldoPendiente)
+            {
+                <span>
+                    El importe del pago debe ser mayor o igual a ese total y no puede
+                    superar el saldo pendiente de
+                    <strong>@Model.SaldoPendiente.ToString("C2")</strong>.
+                </span>
+            }
+            else
+            {
+                <span>El importe del pago debe ser exactamente ese total.</span>
+            }
+        </div>
+    }
+</div>
+
 <div class="row">
     <div class="col-md-6">
         <form asp-action="Registrar" method="post">

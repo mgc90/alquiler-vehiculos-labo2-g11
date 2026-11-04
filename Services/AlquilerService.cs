@@ -173,27 +173,106 @@ public class AlquilerService : IAlquilerService
         if (costosDanios < 0)
             throw new ArgumentException("Los costos por daños no pueden ser negativos.");
 
-        if (kilometrajeDevolucion < alquiler.Vehiculo!.KilometrajeActual)
+        var vehiculo = alquiler.Vehiculo
+            ?? throw new InvalidOperationException("El vehículo asociado al alquiler no existe.");
+
+        if (kilometrajeDevolucion < vehiculo.KilometrajeActual)
             throw new ArgumentException("El kilometraje de devolución no puede ser menor al de salida.");
 
-        
-        
-        //var diasDemora = CalculoAlquiler.DiasDemora(alquiler, devolucionReal);
+        var diasContratados = CalculoImportesAlquiler.DiasContratados(
+            alquiler.EntregaPrevista,
+            alquiler.DevolucionPrevista);
 
-        var demora = devolucionReal - alquiler.DevolucionPrevista.Date.AddDays(1);
-        var diasDemora = demora > TimeSpan.Zero ? (int)Math.Ceiling(demora.TotalDays) : 0;
-        var recargo = diasDemora * alquiler.PrecioAcordado;
+        var diasUso = CalculoImportesAlquiler.DiasUso(
+            alquiler.EntregaReal.Value,
+            devolucionReal);
 
-        alquiler.DevolucionReal = devolucionReal;     // DevolucionPrevista no se toca
-        alquiler.Multa = recargo;
-        alquiler.ImporteTotal += recargo + costosDanios;
-        alquiler.Observaciones = observaciones;
+        var esCancelacionPosteriorAlRetiro =
+            CalculoImportesAlquiler.EsDevolucionAnticipada(
+                alquiler.DevolucionPrevista,
+                devolucionReal);
+
+        decimal multaCancelacion = 0m;
+        decimal recargoDemora = 0m;
+        decimal importeUsoEfectivo = 0m;
+        var detalle = new List<string>();
+
+        if (esCancelacionPosteriorAlRetiro)
+        {
+            var diasRestantes = Math.Max(0, diasContratados - diasUso);
+            var porcentaje =
+                CalculoImportesAlquiler.PorcentajeMultaDiasRestantes(
+                    diasContratados,
+                    diasUso);
+
+            multaCancelacion = CalculoImportesAlquiler.MultaDiasRestantes(
+                alquiler.PrecioAcordado,
+                diasContratados,
+                diasUso);
+
+            importeUsoEfectivo = alquiler.PrecioAcordado * diasUso;
+
+            detalle.Add(
+                $"Cancelación después del retiro ({DateTime.Now:dd/MM/yyyy HH:mm}).");
+            detalle.Add(
+                $"Uso efectivo: {diasUso} día(s) × {alquiler.PrecioAcordado:C2} = {importeUsoEfectivo:C2}.");
+            detalle.Add(
+                $"Multa por días restantes: {(porcentaje * 100):0}% de {diasRestantes} día(s) × {alquiler.PrecioAcordado:C2} = {multaCancelacion:C2}.");
+        }
+        else
+        {
+            var diasDemora = CalculoImportesAlquiler.DiasDemora(
+                alquiler.DevolucionPrevista,
+                devolucionReal);
+
+            recargoDemora = diasDemora * alquiler.PrecioAcordado;
+
+            detalle.Add(diasDemora > 0
+                ? $"Recargo por demora: {diasDemora} día(s) × {alquiler.PrecioAcordado:C2} = {recargoDemora:C2}."
+                : "Devolución en la fecha prevista: sin recargo por demora.");
+        }
+
+        if (costosDanios > 0)
+        {
+            detalle.Add($"Costos por daños: {costosDanios:C2}.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(observaciones))
+        {
+            detalle.Add($"Observaciones del empleado: {observaciones.Trim()}.");
+        }
+
+        var cargos = multaCancelacion + recargoDemora + costosDanios;
+
+        alquiler.DevolucionReal = devolucionReal;
+        alquiler.Multa += cargos;
+
+        // ImporteTotal conserva siempre el importe original del alquiler.
+        alquiler.Observaciones = CombinarObservaciones(
+            alquiler.Observaciones,
+            detalle);
         alquiler.CerradoPorUsuarioId = usuarioId;
         alquiler.Estado = EstadoAlquiler.Finalizado;
-        alquiler.Vehiculo.KilometrajeActual = kilometrajeDevolucion;
+        vehiculo.KilometrajeActual = kilometrajeDevolucion;
 
         await _alquilerRepository.ActualizarAsync(alquiler);
         return alquiler;
+    }
+
+    private static string CombinarObservaciones(
+        string? anteriores,
+        IEnumerable<string> nuevas)
+    {
+        var partes = new List<string>();
+
+        if (!string.IsNullOrWhiteSpace(anteriores))
+        {
+            partes.Add(anteriores.Trim());
+        }
+
+        partes.AddRange(nuevas);
+
+        return string.Join(" ", partes);
     }
 
     
@@ -219,9 +298,19 @@ public class AlquilerService : IAlquilerService
                 "No se puede cancelar directamente un alquiler cuyo vehículo ya fue entregado. Primero debe registrarse su devolución física.");
         }
 
-        var multa = alquiler.ImporteTotal * 0.25m;
+        var multa = CalculoImportesAlquiler.MultaCancelacionPrevia(
+            alquiler.ImporteTotal);
 
-        alquiler.Multa = multa;
+        alquiler.Multa += multa;
+
+        // ImporteTotal conserva siempre el importe original del alquiler.
+        alquiler.Observaciones = CombinarObservaciones(
+            alquiler.Observaciones,
+            new[]
+            {
+                $"Cancelación antes del retiro ({DateTime.Now:dd/MM/yyyy HH:mm}).",
+                $"Multa por cancelación: 25% del importe original ({alquiler.ImporteTotal:C2}) = {multa:C2}."
+            });
 
         alquiler.Estado = EstadoAlquiler.Cancelado;
         alquiler.CerradoPorUsuarioId = usuarioId;
@@ -244,6 +333,12 @@ public class AlquilerService : IAlquilerService
         {
             throw new InvalidOperationException(
                 "Solo se pueden extender alquileres reservados o en curso.");
+        }
+
+        if (alquilerOriginal.DevolucionPrevista.Date < DateTime.Today)
+        {
+            throw new InvalidOperationException(
+                "El alquiler está vencido: primero registre la devolución física para calcular la demora y los daños, y luego cree una nueva reserva.");
         }
 
         var nuevaEntrega = alquilerOriginal.DevolucionPrevista.Date;

@@ -94,5 +94,41 @@ public class PagoRepository : IPagoRepository
             .SumAsync(pago => pago.Importe);
     }
 
+    public async Task<decimal> ObtenerTotalVigentePorTiposAsync(
+        int alquilerId,
+        params TipoPago[] tipos)
+    {
+        var consulta = _context.Pagos
+            .Where(pago =>
+                pago.AlquilerId == alquilerId &&
+                pago.Estado == EstadoPago.Vigente);
 
+        if (tipos.Length > 0)
+        {
+            consulta = consulta.Where(pago => tipos.Contains(pago.Tipo));
+        }
+
+        return await consulta.SumAsync(pago => pago.Importe);
+    }
+
+    public Task<ResultadoPaginado<Pago>> BuscarAsync(
+        EstadoPago? estado,
+        int? alquilerId,
+        int pagina,
+        int tamanioPagina)
+    {
+        var consulta = _context.Pagos
+            .AsNoTracking()
+            .Include(pago => pago.Alquiler)
+            .Include(pago => pago.CreadoPorUsuario)
+            .Include(pago => pago.AnuladoPorUsuario)
+            .Where(pago => estado == null || pago.Estado == estado)
+            .Where(pago => alquilerId == null || pago.AlquilerId == alquilerId)
+            .OrderByDescending(pago => pago.Fecha);
+
+        return Paginacion.CrearResultadoAsync(
+            consulta,
+            pagina,
+            tamanioPagina);
+    }
 }

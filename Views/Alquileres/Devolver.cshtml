@@ -94,12 +94,16 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-7">Importe original</dt>
-                    <dd class="col-sm-5 text-end" id="rImporte"></dd>
+                    <dd class="col-sm-5 text-end" id="rImporteOriginal"></dd>
+                    <dt class="col-sm-7 d-none" id="rUsoTitulo">Importe de uso efectivo</dt>
+                    <dd class="col-sm-5 text-end d-none" id="rUso"></dd>
+                    <dt class="col-sm-7 d-none" id="rCancelacionTitulo">Multa por cancelación anticipada</dt>
+                    <dd class="col-sm-5 text-end d-none" id="rCancelacion"></dd>
                     <dt class="col-sm-7" id="rDemoraTitulo">Recargo por demora</dt>
                     <dd class="col-sm-5 text-end" id="rRecargo"></dd>
                     <dt class="col-sm-7">Costos por daños</dt>
                     <dd class="col-sm-5 text-end" id="rDanios"></dd>
-                    <dt class="col-sm-7">Importe total</dt>
+                    <dt class="col-sm-7">Total exigible</dt>
                     <dd class="col-sm-5 text-end fw-bold" id="rTotal"></dd>
                     <dt class="col-sm-7">Pagos realizados</dt>
                     <dd class="col-sm-5 text-end" id="rPagado"></dd>
@@ -145,13 +149,35 @@
             if (!datosImporte) return;
 
             const danios = parseFloat(inpCostos.value) || 0;
-            const total  = datosImporte.importeTotal + datosImporte.recargo + danios;
+            const anticipada = datosImporte.esCancelacionAnticipada;
+            const base = anticipada
+                ? datosImporte.importeUso
+                : datosImporte.importeOriginal;
+            const total = base + datosImporte.multaCancelacion +
+                          datosImporte.recargo + danios;
             const pagado = datosImporte.pagado ?? 0;
 
-            document.getElementById("rImporte").textContent = peso(datosImporte.importeTotal);
+            document.getElementById("rImporteOriginal").textContent =
+                peso(datosImporte.importeOriginal);
+
+            document.getElementById("rUsoTitulo").classList.toggle("d-none", !anticipada);
+            document.getElementById("rUso").classList.toggle("d-none", !anticipada);
+            document.getElementById("rUsoTitulo").textContent =
+                `Importe de uso efectivo (${datosImporte.diasUso} día/s)`;
+            document.getElementById("rUso").textContent = peso(datosImporte.importeUso);
+
+            document.getElementById("rCancelacionTitulo").classList.toggle("d-none", !anticipada);
+            document.getElementById("rCancelacion").classList.toggle("d-none", !anticipada);
+            document.getElementById("rCancelacionTitulo").textContent =
+                `Multa por cancelación anticipada (${(datosImporte.porcentajeMulta * 100).toFixed(0)}% de ${datosImporte.diasRestantes} día/s)`;
+            document.getElementById("rCancelacion").textContent = peso(datosImporte.multaCancelacion);
+
+            document.getElementById("rDemoraTitulo").classList.toggle("d-none", anticipada);
+            document.getElementById("rRecargo").classList.toggle("d-none", anticipada);
             document.getElementById("rDemoraTitulo").textContent =
                 `Recargo por demora (${datosImporte.diasDemora} día/s)`;
             document.getElementById("rRecargo").textContent = peso(datosImporte.recargo);
+
             document.getElementById("rDanios").textContent  = peso(danios);
             document.getElementById("rTotal").textContent   = peso(total);
             document.getElementById("rPagado").textContent  = peso(pagado);
@@ -186,8 +212,9 @@
             document.getElementById("dKilometraje").textContent = `${d.kilometraje} km`;
             document.getElementById("dEntregaReal").textContent = d.entregaReal;
             document.getElementById("dDevolucion").textContent = d.devolucionPrevista;
-            document.getElementById("dDemora").textContent = d.diasDemora > 0 ? `${d.diasDemora} día(s)` : "Sin demora";
-            document.getElementById("dPrecio").textContent = `${d.precioAcordado}$`;
+            document.getElementById("dDemora").textContent = d.esCancelacionAnticipada
+                ? "No aplica (devolución anticipada)"
+                : (d.diasDemora > 0 ? `${d.diasDemora} día(s)` : "Sin demora");
             document.getElementById("dPrecio").textContent = peso(d.precioAcordado);
 
             inpKm.min = d.kilometraje;

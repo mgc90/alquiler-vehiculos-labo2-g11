@@ -109,7 +109,14 @@
             <p class="mb-1 mt-2" id="vehiculoSeleccionado"
                 data-original-id="@ViewData["VehiculoOriginalId"]"
                 data-original-descripcion="@Model.VehiculoOriginal">
-                Vehículo original: @Model.VehiculoOriginal
+                @if (ViewData["VehiculoOriginalId"]?.ToString() == Model.VehiculoId.ToString())
+                {
+                    <text>Vehículo original: @Model.VehiculoOriginal</text>
+                }
+                else
+                {
+                    <text>Vehículo seleccionado (id @Model.VehiculoId) — verificando disponibilidad...</text>
+                }
             </p>
 
             <div class="d-flex gap-2">
@@ -158,8 +165,10 @@
             ? String(vehiculoId.value)
             : originalId;
 
-        let seleccionDescripcion = originalDescripcion;
         let seleccionEsOriginal = seleccionId === originalId;
+        let seleccionDescripcion = seleccionEsOriginal
+            ? originalDescripcion
+            : `vehículo #${seleccionId}`;
 
         const tablaDisponibles = document.getElementById('tablaDisponibles');
         const mensajeDisponibles = document.getElementById('mensajeDisponibles');
@@ -198,7 +207,7 @@
         }
 
         function aplicarEstadoSeleccion(disponible, textoSeleccion) {
-            vehiculoId.value = seleccionId;
+            vehiculoId.value = disponible ? seleccionId : '0';
             btnConfirmar.disabled = !disponible;
             vehiculoSeleccionado.textContent = textoSeleccion;
         }
@@ -264,7 +273,7 @@
                     aplicarEstadoSeleccion(
                         false, `Vehículo seleccionado: ${seleccionDescripcion} — NO disponible para el nuevo período. Elija otro vehículo de la lista.`
                     );
-                    mensajeDisponibles.textContent ='El vehículo seleccionado no está disponible para estas fechas. Busque y seleccione otro vehículo disponible.';
+                    mensajeDisponibles.textContent = 'El vehículo seleccionado no está disponible para estas fechas. Busque y seleccione otro vehículo disponible.';
                 }
             } catch {
                 aplicarEstadoSeleccion(
@@ -277,7 +286,7 @@
             const entrega = fechaEntrega.value;
             const devolucion = fechaDevolucion.value;
             if (!entrega || !devolucion || devolucion <= entrega) {
-                mensajeDisponibles.textContent ='La nueva fecha de devolución debe ser posterior a la fecha de inicio de la extensión.';
+                mensajeDisponibles.textContent = 'La nueva fecha de devolución debe ser posterior a la fecha de inicio de la extensión.';
                 tablaDisponibles.classList.add('d-none');
                 return;
             }

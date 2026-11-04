@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using alquiler_vehiculos_g11.Models.Enums;
 
 namespace alquiler_vehiculos_g11.Models;
@@ -43,4 +44,31 @@ public class Alquiler
     public ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
     public ICollection<Imagen> Imagenes { get; set; } = new List<Imagen>();
+
+    [NotMapped]
+    public bool EsCancelacionPosteriorAlRetiro =>
+        CalculoImportesAlquiler.EsCancelacionPosteriorAlRetiro(this);
+
+    [NotMapped]
+    public decimal ImporteUsoEfectivo =>
+        CalculoImportesAlquiler.ImporteUsoEfectivo(this);
+
+    [NotMapped]
+    public decimal MultaCancelacion =>
+        CalculoImportesAlquiler.MultaCancelacion(this);
+
+    [NotMapped]
+    public decimal OtrosCargos =>
+        CalculoImportesAlquiler.OtrosCargos(this);
+
+    [NotMapped]
+    public decimal TotalExigible =>
+        CalculoImportesAlquiler.TotalExigible(this);
+
+    [NotMapped]
+    public decimal PagosVigentes =>
+        CalculoImportesAlquiler.PagosVigentes(Pagos);
+
+    [NotMapped]
+    public decimal SaldoPendiente => TotalExigible - PagosVigentes;
 }

@@ -1,17 +1,24 @@
-
 @model alquiler_vehiculos_g11.Models.Alquiler
 
 @{
     ViewData["Title"] = "Cancelar alquiler";
-    var multa = Model.ImporteTotal * 0.25m;
+
+    var multa = CalculoImportesAlquiler.MultaCancelacionPrevia(
+        Model.ImporteTotal);
+    var pagado = Model.PagosVigentes;
+    var totalExigible = multa;
+    var cobertura = Math.Min(pagado, totalExigible);
+    var saldo = totalExigible - cobertura;
 }
 
 <h1>Cancelar alquiler</h1>
 
 <div class="alert alert-warning">
     <strong>Atención:</strong>
-    Esta operación cancelará la reserva y establecerá
+    Esta operación cancelará la reserva antes del retiro y establecerá
     una multa equivalente al 25 % del importe original.
+    El importe original permanece registrado en el alquiler; el importe
+    exigible por la cancelación será únicamente la multa.
 </div>
 
 <h4>Datos del alquiler</h4>
@@ -42,17 +49,45 @@
         @Model.ImporteTotal.ToString("C2")
     </dd>
 
-    <dt class="col-sm-3">Multa por cancelación</dt>
+    <dt class="col-sm-3">Multa</dt>
     <dd class="col-sm-9">
         <strong>@multa.ToString("C2")</strong>
     </dd>
+
+    <dt class="col-sm-3">Total exigible</dt>
+    <dd class="col-sm-9">
+        <strong>@totalExigible.ToString("C2")</strong>
+    </dd>
+
+    <dt class="col-sm-3">Pagos vigentes</dt>
+    <dd class="col-sm-9">
+        @pagado.ToString("C2")
+        (cubren @cobertura.ToString("C2") de la multa)
+    </dd>
+
+    <dt class="col-sm-3">Saldo a cobrar</dt>
+    <dd class="col-sm-9">
+        <strong class="@(saldo > 0 ? "text-danger" : "text-success")">
+            @saldo.ToString("C2")
+        </strong>
+    </dd>
 </dl>
 
-<p>
-    La multa será el importe total exigible por la cancelación.
-    Los pagos vigentes que ya se hayan recibido se descontarán
-    para calcular el saldo pendiente.
-</p>
+@if (saldo > 0)
+{
+    <p class="text-danger">
+        La seña u otros pagos vigentes no alcanzan a cubrir la multa.
+        Quedará un saldo pendiente de @saldo.ToString("C2") que podrá
+        registrarse luego como pago de tipo Multa.
+    </p>
+}
+else
+{
+    <p class="text-success">
+        Los pagos vigentes cubren la totalidad de la multa:
+        no quedará saldo pendiente.
+    </p>
+}
 
 <form asp-action="Cancelar" method="post">
     <input type="hidden" name="id" value="@Model.Id" />

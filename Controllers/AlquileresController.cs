@@ -15,24 +15,57 @@ public class AlquileresController : Controller
     private const int TamPagina = 10;
 
     private readonly IAlquilerService _alquilerService;
+    private readonly IAlquilerRepository _alquilerRepository;
     private readonly IVehiculoRepository _vehiculoRepository;
     private readonly IClienteRepository _clienteRepository;
 
     public AlquileresController(
         IAlquilerService alquilerService,
+        IAlquilerRepository alquilerRepository,
         IVehiculoRepository vehiculoRepository,
         IClienteRepository clienteRepository)
     {
         _alquilerService = alquilerService;
+        _alquilerRepository = alquilerRepository;
         _vehiculoRepository = vehiculoRepository;
         _clienteRepository = clienteRepository;
     }
 
     [HttpGet]
-    public IActionResult Index() => View();
+    public async Task<IActionResult> Index(
+        EstadoAlquiler? estado,
+        int? clienteId,
+        int? vehiculoId,
+        int pagina = 1)
+    {
+        var modelo = new AlquileresIndexViewModel
+        {
+            Estado = estado,
+            ClienteId = clienteId,
+            VehiculoId = vehiculoId,
+            Resultado = await _alquilerRepository.BuscarAsync(
+                estado,
+                clienteId,
+                vehiculoId,
+                pagina,
+                TamPagina)
+        };
+
+        return View(modelo);
+    }
 
     [HttpGet]
-    public IActionResult Details(int id) => View();
+    public async Task<IActionResult> Details(int id)
+    {
+        var alquiler = await _alquilerService.ObtenerDetalleAsync(id);
+
+        if (alquiler == null)
+        {
+            return NotFound();
+        }
+
+        return View(alquiler);
+    }
 
     [HttpGet]
     public async Task<IActionResult> NuevaReserva()
@@ -245,9 +278,47 @@ public class AlquileresController : Controller
         var a = await _alquilerService.ObtenerEnCursoParaDevolucionAsync(alquilerId);
         if (a == null) return NotFound();
 
-        var limite = a.DevolucionPrevista.Date.AddDays(1);
-        var demora = DateTime.Now - limite;
-        var diasDemora = demora > TimeSpan.Zero ? (int)Math.Ceiling(demora.TotalDays): 0;
+        var hoy = DateTime.Now;
+
+        var diasContratados = CalculoImportesAlquiler.DiasContratados(
+            a.EntregaPrevista,
+            a.DevolucionPrevista);
+
+        var diasUso = a.EntregaReal.HasValue
+            ? CalculoImportesAlquiler.DiasUso(a.EntregaReal.Value, hoy)
+            : 0;
+
+        var esCancelacionAnticipada = a.EntregaReal.HasValue
+            && CalculoImportesAlquiler.EsDevolucionAnticipada(
+                a.DevolucionPrevista,
+                hoy);
+
+        var diasRestantes = esCancelacionAnticipada
+            ? Math.Max(0, diasContratados - diasUso)
+            : 0;
+
+        var porcentajeMulta = esCancelacionAnticipada
+            ? CalculoImportesAlquiler.PorcentajeMultaDiasRestantes(
+                diasContratados,
+                diasUso)
+            : 0m;
+
+        var multaCancelacion = esCancelacionAnticipada
+            ? CalculoImportesAlquiler.MultaDiasRestantes(
+                a.PrecioAcordado,
+                diasContratados,
+                diasUso)
+            : 0m;
+
+        var importeUso = esCancelacionAnticipada
+            ? a.PrecioAcordado * diasUso
+            : 0m;
+
+        var diasDemora = esCancelacionAnticipada
+            ? 0
+            : CalculoImportesAlquiler.DiasDemora(
+                a.DevolucionPrevista,
+                hoy);
 
         return Json(new
         {
@@ -257,13 +328,17 @@ public class AlquileresController : Controller
             kilometraje = a.Vehiculo.KilometrajeActual,
             entregaReal = a.EntregaReal?.ToString("dd/MM/yyyy HH:mm"),
             devolucionPrevista = a.DevolucionPrevista.ToString("dd/MM/yyyy"),
-            diasDemora,
-            recargo = diasDemora * a.PrecioAcordado,
-            importeTotal = a.ImporteTotal,
             precioAcordado = a.PrecioAcordado,
-            pagado = a.Pagos
-                .Where(p => p.Estado == EstadoPago.Vigente)
-                .Sum(p => p.Importe),
+            importeOriginal = a.ImporteTotal,
+            importeUso,
+            pagado = CalculoImportesAlquiler.PagosVigentes(a.Pagos),
+            esCancelacionAnticipada,
+            diasUso,
+            diasRestantes,
+            porcentajeMulta,
+            multaCancelacion,
+            diasDemora,
+            recargo = diasDemora * a.PrecioAcordado
         });
     }
 
@@ -345,7 +420,7 @@ public class AlquileresController : Controller
     [HttpGet]
     public async Task<IActionResult> Cancelar(int id)
     {
-        var alquiler = await _alquilerService.ObtenerPorIdAsync(id);
+        var alquiler = await _alquilerService.ObtenerDetalleAsync(id);
 
         if (alquiler == null)
         {
@@ -405,6 +480,12 @@ public class AlquileresController : Controller
         {
             TempData["Error"] = "Solo se pueden extender alquileres reservados o en curso.";
             return RedirectToAction(nameof(Index));
+        }
+
+        if (alquiler.DevolucionPrevista.Date < DateTime.Today)
+        {
+            TempData["Error"] = "El alquiler está vencido: primero registre la devolución física para calcular la demora y los daños, y luego cree una nueva reserva.";
+            return RedirectToAction(nameof(Details), new { id });
         }
 
         var model = new ExtenderAlquilerViewModel

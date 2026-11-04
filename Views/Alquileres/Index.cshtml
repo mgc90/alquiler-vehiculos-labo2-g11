@@ -1,14 +1,31 @@
+@using alquiler_vehiculos_g11.Models.Enums
+@model alquiler_vehiculos_g11.Models.ViewModels.AlquileresIndexViewModel
 
 @{
     ViewData["Title"] = "Alquileres";
+
+    string Badge(EstadoAlquiler estado) => estado switch
+    {
+        EstadoAlquiler.Reservado => "bg-info text-dark",
+        EstadoAlquiler.EnCurso => "bg-primary",
+        EstadoAlquiler.Finalizado => "bg-success",
+        EstadoAlquiler.Cancelado => "bg-danger",
+        _ => "bg-secondary"
+    };
+
+    var totalPaginas = Math.Max(
+        1,
+        (int)Math.Ceiling(
+            Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina));
+    var paginaActual = Model.Resultado.Pagina;
 }
 
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h1>Alquileres</h1>
     <div class="d-flex justify-content-end gap-3">
         <a asp-action="NuevaReserva" class="btn btn-primary">Nueva reserva</a>
-        <a asp-action="Entregar" class="btn btn-success">Entregar vehiculo</a>
-        <a asp-action="Devolver" class="btn btn-solid theme-info">Devolver vehiculo</a>
+        <a asp-action="Entregar" class="btn btn-success">Entregar vehículo</a>
+        <a asp-action="Devolver" class="btn btn-solid theme-info">Devolver vehículo</a>
     </div>
 </div>
 
@@ -26,4 +43,147 @@
         @error
         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
     </div>
+}
+
+<form method="get" class="card mb-3">
+    <div class="card-body row g-3 align-items-end">
+        <div class="col-md-3">
+            <label class="form-label" for="estado">Estado</label>
+            <select id="estado" name="estado" class="form-select">
+                <option value="">Todos</option>
+                @foreach (var valor in Enum.GetValues<EstadoAlquiler>())
+                {
+                    <option value="@valor" selected="@(Model.Estado == valor)">@valor</option>
+                }
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label" for="clienteId">Cliente (ID)</label>
+            <input id="clienteId" name="clienteId" type="number" min="1"
+                   value="@Model.ClienteId" class="form-control" />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label" for="vehiculoId">Vehículo (ID)</label>
+            <input id="vehiculoId" name="vehiculoId" type="number" min="1"
+                   value="@Model.VehiculoId" class="form-control" />
+        </div>
+
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Filtrar</button>
+            <a asp-action="Index" class="btn btn-secondary">Limpiar</a>
+        </div>
+    </div>
+</form>
+
+@if (Model.Resultado.Elementos.Count == 0)
+{
+    <div class="alert alert-info">No se encontraron alquileres con los filtros indicados.</div>
+}
+else
+{
+    <div class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+                <tr>
+                    <th>N.º</th>
+                    <th>Cliente</th>
+                    <th>Vehículo</th>
+                    <th>Entrega prevista</th>
+                    <th>Devolución prevista</th>
+                    <th>Estado</th>
+                    <th class="text-end">Importe original</th>
+                    <th class="text-end">Uso efectivo</th>
+                    <th class="text-end">Multa cancelación</th>
+                    <th class="text-end">Otros cargos</th>
+                    <th class="text-end">Total exigible</th>
+                    <th class="text-end">Pagos vigentes</th>
+                    <th class="text-end">Saldo</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var alquiler in Model.Resultado.Elementos)
+                {
+                    <tr>
+                        <td>@alquiler.Id</td>
+                        <td>@alquiler.Cliente?.Apellido, @alquiler.Cliente?.Nombre</td>
+                        <td>
+                            @alquiler.Vehiculo?.Marca @alquiler.Vehiculo?.Modelo
+                            (@alquiler.Vehiculo?.Patente)
+                        </td>
+                        <td>@alquiler.EntregaPrevista.ToString("dd/MM/yyyy")</td>
+                        <td>@alquiler.DevolucionPrevista.ToString("dd/MM/yyyy")</td>
+                        <td>
+                            <span class="badge @Badge(alquiler.Estado)">@alquiler.Estado</span>
+                        </td>
+                        <td class="text-end">@alquiler.ImporteTotal.ToString("C2")</td>
+                        <td class="text-end">
+                            @(alquiler.ImporteUsoEfectivo > 0
+                                ? alquiler.ImporteUsoEfectivo.ToString("C2")
+                                : "—")
+                        </td>
+                        <td class="text-end">@alquiler.MultaCancelacion.ToString("C2")</td>
+                        <td class="text-end">@alquiler.OtrosCargos.ToString("C2")</td>
+                        <td class="text-end fw-bold">@alquiler.TotalExigible.ToString("C2")</td>
+                        <td class="text-end">@alquiler.PagosVigentes.ToString("C2")</td>
+                        <td class="text-end">@alquiler.SaldoPendiente.ToString("C2")</td>
+                        <td class="text-end text-nowrap">
+                            <a asp-action="Details" asp-route-id="@alquiler.Id"
+                               class="btn btn-sm btn-outline-primary">Detalle</a>
+
+                            <a asp-controller="Pagos" asp-action="Registrar"
+                               asp-route-alquilerId="@alquiler.Id"
+                               class="btn btn-sm btn-outline-success">Pago</a>
+
+                            @if (alquiler.Estado == EstadoAlquiler.Reservado &&
+                                 alquiler.EntregaReal == null)
+                            {
+                                <a asp-action="Cancelar" asp-route-id="@alquiler.Id"
+                                   class="btn btn-sm btn-outline-danger">Cancelar</a>
+                            }
+
+                            @if ((alquiler.Estado == EstadoAlquiler.Reservado ||
+                                  alquiler.Estado == EstadoAlquiler.EnCurso) &&
+                                 alquiler.DevolucionPrevista.Date >= DateTime.Today)
+                            {
+                                <a asp-action="Extender" asp-route-id="@alquiler.Id"
+                                   class="btn btn-sm btn-outline-secondary">Extender</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+
+    <nav aria-label="Paginación de alquileres">
+        <ul class="pagination justify-content-center">
+            <li class="page-item @(paginaActual <= 1 ? "disabled" : string.Empty)">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-estado="@Model.Estado"
+                   asp-route-clienteId="@Model.ClienteId"
+                   asp-route-vehiculoId="@Model.VehiculoId"
+                   asp-route-pagina="@(paginaActual - 1)">Anterior</a>
+            </li>
+
+            <li class="page-item disabled">
+                <span class="page-link">
+                    Página @paginaActual de @totalPaginas
+                    (@Model.Resultado.TotalRegistros registros)
+                </span>
+            </li>
+
+            <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : string.Empty)">
+                <a class="page-link"
+                   asp-action="Index"
+                   asp-route-estado="@Model.Estado"
+                   asp-route-clienteId="@Model.ClienteId"
+                   asp-route-vehiculoId="@Model.VehiculoId"
+                   asp-route-pagina="@(paginaActual + 1)">Siguiente</a>
+            </li>
+        </ul>
+    </nav>
 }
