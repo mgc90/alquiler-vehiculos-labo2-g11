@@ -6,6 +6,10 @@ public interface ICategoriaVehiculoRepository : IWriteRepository<CategoriaVehicu
 {
     Task<IEnumerable<CategoriaVehiculo>> ObtenerTodasAsync();
     Task<IEnumerable<CategoriaVehiculo>> ObtenerActivasAsync();
+    Task<ResultadoPaginado<CategoriaVehiculo>> BuscarAsync(
+        string termino,
+        int pagina,
+        int tamanioPagina);
     Task CrearAsync(CategoriaVehiculo categoria);
     Task BajaLogicaAsync(int id);
 

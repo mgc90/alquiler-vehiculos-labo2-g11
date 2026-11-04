@@ -159,4 +159,27 @@ public class CategoriasVehiculoController : Controller
         TempData["Mensaje"] = "Categoría desactivada con éxito.";
         return RedirectToAction(nameof(Index));
     }
+
+    // GET: CategoriasVehiculo/Buscar?termino=&pagina=1
+    [HttpGet]
+    public async Task<IActionResult> Buscar(string? termino, int pagina = 1)
+    {
+        var resultado = await _repository.BuscarAsync(
+            termino?.Trim() ?? string.Empty,
+            pagina,
+            10);
+
+        return Json(new
+        {
+            resultado.TotalRegistros,
+            resultado.Pagina,
+            resultado.TamanioPagina,
+            Elementos = resultado.Elementos.Select(categoria => new
+            {
+                categoria.Id,
+                categoria.Nombre,
+                categoria.PrecioDiario
+            })
+        });
+    }
 }

@@ -37,6 +37,27 @@ public class CategoriaVehiculoRepository : ICategoriaVehiculoRepository
             .OrderBy(categoria => categoria.Nombre)
             .ToListAsync();
 
+    public Task<ResultadoPaginado<CategoriaVehiculo>> BuscarAsync(
+        string termino,
+        int pagina,
+        int tamanioPagina)
+    {
+        IQueryable<CategoriaVehiculo> consulta = _context.CategoriasVehiculo
+            .AsNoTracking()
+            .Where(categoria => categoria.Activa);
+
+        if (!string.IsNullOrWhiteSpace(termino))
+        {
+            var filtro = termino.Trim();
+            consulta = consulta.Where(categoria => categoria.Nombre.Contains(filtro));
+        }
+
+        return Paginacion.CrearResultadoAsync(
+            consulta.OrderBy(categoria => categoria.Nombre),
+            pagina,
+            tamanioPagina);
+    }
+
     public async Task AgregarAsync(CategoriaVehiculo entity)
     {
         _context.CategoriasVehiculo.Add(entity);

@@ -26,6 +26,10 @@ public interface IVehiculoRepository : IWriteRepository<Vehiculo>
         int pagina,
         int tamanioPagina);
 
+    Task<bool> ExistePatenteAsync(
+        string patente,
+        int? excluirId = null);
+
     Task<ResultadoPaginado<Vehiculo>> ObtenerPorEstadoAsync(
         EstadoOperativoVehiculo? estado,
         int pagina,

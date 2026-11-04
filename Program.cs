@@ -35,6 +35,7 @@ builder.Services.AddControllersWithViews(options =>
     mensajes.SetNonPropertyValueMustBeANumberAccessor(
         () => "El valor debe ser un número.");
 });
+builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
 builder.Services.AddScoped<IVehiculoRepository, VehiculoRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<ICategoriaVehiculoRepository, CategoriaVehiculoRepository>();
@@ -44,6 +45,7 @@ builder.Services.AddScoped<IAlquilerService, AlquilerService>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 builder.Services.AddScoped<IInformeClientesRepository, ClienteInformeRepository>();
+
 
 
 

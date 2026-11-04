@@ -110,17 +110,31 @@ public class VehiculoRepository : IVehiculoRepository
         int pagina,
         int tamanioPagina)
     {
-        var consulta = _context.Vehiculos
+        IQueryable<Vehiculo> consulta = _context.Vehiculos
             .AsNoTracking()
-            .Include(vehiculo => vehiculo.CategoriaVehiculo)
-            .Where(vehiculo =>
-                vehiculo.Patente.Contains(termino)
-                || vehiculo.Marca.Contains(termino)
-                || vehiculo.Modelo.Contains(termino))
-            .OrderBy(vehiculo => vehiculo.Patente);
+            .Include(vehiculo => vehiculo.CategoriaVehiculo);
 
-        return Paginacion.CrearResultadoAsync(consulta, pagina, tamanioPagina);
+        if (!string.IsNullOrWhiteSpace(termino))
+        {
+            var filtro = termino.Trim();
+            consulta = consulta.Where(vehiculo =>
+                vehiculo.Patente.Contains(filtro)
+                || vehiculo.Marca.Contains(filtro)
+                || vehiculo.Modelo.Contains(filtro));
+        }
+
+        return Paginacion.CrearResultadoAsync(
+            consulta.OrderBy(vehiculo => vehiculo.Patente),
+            pagina,
+            tamanioPagina);
     }
+
+    public Task<bool> ExistePatenteAsync(string patente, int? excluirId = null) =>
+        _context.Vehiculos
+            .AsNoTracking()
+            .AnyAsync(vehiculo =>
+                vehiculo.Patente == patente
+                && (excluirId == null || vehiculo.Id != excluirId.Value));
 
     public Task<ResultadoPaginado<Vehiculo>> ObtenerPorEstadoAsync(
         EstadoOperativoVehiculo? estado,

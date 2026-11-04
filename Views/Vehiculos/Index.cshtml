@@ -1,1 +1,384 @@
+@{
+    ViewData["Title"] = "Vehículos";
+}
+
+<style>
+    [v-cloak] {
+        display: none;
+    }
+</style>
+
 <h1>Vehículos</h1>
+
+@Html.AntiForgeryToken()
+
+<div id="app-vehiculos" v-cloak>
+    <div class="row g-2 align-items-center mb-3">
+        <div class="col-md-5">
+            <div class="input-group">
+                <input class="form-control"
+                       v-model="termino"
+                       v-on:keydown.enter.prevent="buscar(1)"
+                       placeholder="Patente, marca o modelo" />
+                <button type="button" class="btn btn-outline-secondary" v-on:click="buscar(1)">Buscar</button>
+            </div>
+        </div>
+        <div class="col-md-7 text-end">
+            <button type="button" class="btn btn-primary" v-on:click="abrirAlta">Nuevo vehículo</button>
+        </div>
+    </div>
+
+    <div class="alert alert-success" v-if="mensaje">{{ mensaje }}</div>
+    <div class="alert alert-danger" v-if="errorGeneral">{{ errorGeneral }}</div>
+
+    <table class="table table-sm align-middle">
+        <thead>
+            <tr>
+                <th>Patente</th>
+                <th>Vehículo</th>
+                <th>Categoría</th>
+                <th>Kilometraje</th>
+                <th>Estado</th>
+                <th class="text-end">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr v-if="cargando">
+                <td colspan="6" class="text-muted">Cargando...</td>
+            </tr>
+            <tr v-else-if="vehiculos.length === 0">
+                <td colspan="6" class="text-muted">Sin resultados.</td>
+            </tr>
+            <tr v-for="vehiculo in vehiculos" v-bind:key="vehiculo.id">
+                <td>{{ vehiculo.patente }}</td>
+                <td>{{ vehiculo.marca }} {{ vehiculo.modelo }}</td>
+                <td>{{ vehiculo.categoria }}</td>
+                <td>{{ vehiculo.kilometrajeActual.toLocaleString('es-AR') }} km</td>
+                <td>
+                    <span class="badge" v-bind:class="claseEstado(vehiculo.estadoOperativo)">{{ vehiculo.estadoOperativo }}</span>
+                </td>
+                <td class="text-end">
+                    <button type="button" class="btn btn-sm btn-outline-primary" v-on:click="abrirEdicion(vehiculo)">Editar</button>
+                    <button type="button" class="btn btn-sm btn-outline-danger"
+                            v-if="vehiculo.estadoOperativo !== 'Baja'"
+                            v-on:click="darDeBaja(vehiculo)">Dar de baja</button>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <div class="d-flex align-items-center gap-2">
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                v-bind:disabled="pagina <= 1"
+                v-on:click="buscar(pagina - 1)">Anterior</button>
+        <span>Página {{ pagina }} de {{ totalPaginas }} — {{ totalRegistros }} vehículo(s)</span>
+        <button type="button" class="btn btn-sm btn-outline-secondary"
+                v-bind:disabled="pagina >= totalPaginas"
+                v-on:click="buscar(pagina + 1)">Siguiente</button>
+    </div>
+
+    <div class="modal fade" id="modalVehiculo" tabindex="-1" aria-labelledby="tituloModalVehiculo" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="tituloModalVehiculo">{{ modoEdicion ? 'Editar vehículo' : 'Nuevo vehículo' }}</h5>
+                    <button type="button" class="btn-close" v-on:click="cerrarModal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" v-if="errores['']">{{ errores[''][0] }}</div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Patente</label>
+                        <input class="form-control" v-model="formulario.patente" placeholder="ABC123 o AB123CD" />
+                        <div class="text-danger small" v-if="primerError('Patente')">{{ primerError('Patente') }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Marca</label>
+                        <input class="form-control" v-model="formulario.marca" />
+                        <div class="text-danger small" v-if="primerError('Marca')">{{ primerError('Marca') }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Modelo</label>
+                        <input class="form-control" v-model="formulario.modelo" />
+                        <div class="text-danger small" v-if="primerError('Modelo')">{{ primerError('Modelo') }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Kilometraje actual</label>
+                        <input type="number" min="0" class="form-control" v-model.number="formulario.kilometrajeActual" />
+                        <div class="text-danger small" v-if="primerError('KilometrajeActual')">{{ primerError('KilometrajeActual') }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Categoría</label>
+                        <div class="input-group mb-1">
+                            <input class="form-control"
+                                   v-model="busquedaCategoria"
+                                   v-on:keydown.enter.prevent="cargarCategorias"
+                                   placeholder="Buscar categoría..." />
+                            <button type="button" class="btn btn-outline-secondary" v-on:click="cargarCategorias">Buscar</button>
+                        </div>
+                        <p class="small mb-1" v-if="categoriaSeleccionada">
+                            Seleccionada: <strong>{{ categoriaSeleccionada.nombre }}</strong>
+                        </p>
+                        <p class="small text-muted mb-1" v-else>Sin categoría seleccionada.</p>
+                        <div class="list-group mb-1" v-if="categorias.length">
+                            <button type="button"
+                                    class="list-group-item list-group-item-action py-1"
+                                    v-for="categoria in categorias"
+                                    v-bind:key="categoria.id"
+                                    v-on:click="elegirCategoria(categoria)">
+                                {{ categoria.nombre }} — ${{ categoria.precioDiario }} por día
+                            </button>
+                        </div>
+                        <div class="text-danger small" v-if="primerError('CategoriaVehiculoId')">{{ primerError('CategoriaVehiculoId') }}</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Estado operativo</label>
+                        <select class="form-select" v-model="formulario.estadoOperativo">
+                            <option value="Habilitado">Habilitado</option>
+                            <option value="Mantenimiento">Mantenimiento</option>
+                            <option value="Baja">Baja</option>
+                        </select>
+                        <div class="text-danger small" v-if="primerError('EstadoOperativo')">{{ primerError('EstadoOperativo') }}</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" v-on:click="cerrarModal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" v-bind:disabled="guardando" v-on:click="guardar">
+                        {{ guardando ? 'Guardando...' : 'Guardar' }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+    <script>
+        const urlListar = '@Url.Action("Listar", "Vehiculos")';
+        const urlCrear = '@Url.Action("Crear", "Vehiculos")';
+        const urlActualizar = '@Url.Action("Actualizar", "Vehiculos")';
+        const urlBaja = '@Url.Action("Baja", "Vehiculos")';
+        const urlCategorias = '@Url.Action("Buscar", "CategoriasVehiculo")';
+        const tokenAntiforgery = document.querySelector('input[name="__RequestVerificationToken"]').value;
+
+        Vue.createApp({
+            data() {
+                return {
+                    termino: '',
+                    vehiculos: [],
+                    totalRegistros: 0,
+                    pagina: 1,
+                    tamanioPagina: 10,
+                    cargando: false,
+                    guardando: false,
+                    mensaje: '',
+                    errorGeneral: '',
+                    modoEdicion: false,
+                    formulario: this.formularioVacio(),
+                    errores: {},
+                    categorias: [],
+                    busquedaCategoria: '',
+                    categoriaSeleccionada: null,
+                    modal: null
+                };
+            },
+            computed: {
+                totalPaginas() {
+                    return Math.max(1, Math.ceil(this.totalRegistros / this.tamanioPagina));
+                }
+            },
+            mounted() {
+                this.modal = new bootstrap.Modal(document.getElementById('modalVehiculo'));
+                this.buscar(1);
+            },
+            methods: {
+                formularioVacio() {
+                    return {
+                        id: 0,
+                        patente: '',
+                        marca: '',
+                        modelo: '',
+                        kilometrajeActual: 0,
+                        estadoOperativo: 'Habilitado'
+                    };
+                },
+                claseEstado(estado) {
+                    if (estado === 'Habilitado') {
+                        return 'text-bg-success';
+                    }
+                    if (estado === 'Mantenimiento') {
+                        return 'text-bg-warning';
+                    }
+                    return 'text-bg-secondary';
+                },
+                primerError(campo) {
+                    const mensajes = this.errores[campo];
+                    return mensajes && mensajes.length ? mensajes[0] : '';
+                },
+                async buscar(pagina) {
+                    this.cargando = true;
+                    this.errorGeneral = '';
+
+                    const parametros = new URLSearchParams({
+                        termino: this.termino.trim(),
+                        pagina: Math.max(1, pagina)
+                    });
+
+                    try {
+                        const respuesta = await fetch(`${urlListar}?${parametros}`);
+                        if (!respuesta.ok) {
+                            this.errorGeneral = 'No se pudo cargar el listado.';
+                            return;
+                        }
+
+                        const datos = await respuesta.json();
+                        this.vehiculos = datos.elementos;
+                        this.totalRegistros = datos.totalRegistros;
+                        this.pagina = datos.pagina;
+                        this.tamanioPagina = datos.tamanioPagina;
+                    } catch {
+                        this.errorGeneral = 'No se pudo cargar el listado.';
+                    } finally {
+                        this.cargando = false;
+                    }
+                },
+                abrirAlta() {
+                    this.modoEdicion = false;
+                    this.formulario = this.formularioVacio();
+                    this.categoriaSeleccionada = null;
+                    this.busquedaCategoria = '';
+                    this.errores = {};
+                    this.errorGeneral = '';
+                    this.cargarCategorias();
+                    this.modal.show();
+                },
+                abrirEdicion(vehiculo) {
+                    this.modoEdicion = true;
+                    this.formulario = {
+                        id: vehiculo.id,
+                        patente: vehiculo.patente,
+                        marca: vehiculo.marca,
+                        modelo: vehiculo.modelo,
+                        kilometrajeActual: vehiculo.kilometrajeActual,
+                        estadoOperativo: vehiculo.estadoOperativo
+                    };
+                    this.categoriaSeleccionada = {
+                        id: vehiculo.categoriaVehiculoId,
+                        nombre: vehiculo.categoria
+                    };
+                    this.busquedaCategoria = '';
+                    this.errores = {};
+                    this.errorGeneral = '';
+                    this.cargarCategorias(vehiculo.categoria);
+                    this.modal.show();
+                },
+                cerrarModal() {
+                    this.modal.hide();
+                },
+                async cargarCategorias() {
+                    const parametros = new URLSearchParams({
+                        termino: (this.busquedaCategoria || '').trim(),
+                        pagina: 1
+                    });
+
+                    const respuesta = await fetch(`${urlCategorias}?${parametros}`);
+                    if (!respuesta.ok) {
+                        this.categorias = [];
+                        return;
+                    }
+
+                    const datos = await respuesta.json();
+                    this.categorias = datos.elementos;
+                },
+                elegirCategoria(categoria) {
+                    this.categoriaSeleccionada = categoria;
+                    this.categorias = [];
+                    this.busquedaCategoria = '';
+                },
+                async guardar() {
+                    const errores = {};
+                    if (!this.categoriaSeleccionada) {
+                        errores.CategoriaVehiculoId = ['Seleccione una categoría.'];
+                    }
+
+                    if (Object.keys(errores).length) {
+                        this.errores = errores;
+                        return;
+                    }
+
+                    this.guardando = true;
+                    this.errores = {};
+
+                    const payload = {
+                        ...this.formulario,
+                        categoriaVehiculoId: this.categoriaSeleccionada.id
+                    };
+
+                    try {
+                        const respuesta = await fetch(
+                            this.modoEdicion ? urlActualizar : urlCrear,
+                            {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'RequestVerificationToken': tokenAntiforgery
+                                },
+                                body: JSON.stringify(payload)
+                            });
+
+                        const datos = await respuesta.json().catch(() => ({}));
+
+                        if (!respuesta.ok) {
+                            this.errores = datos.errores || {};
+                            this.errorGeneral = this.errores['']?.[0]
+                                || datos.mensaje
+                                || 'No se pudo guardar el vehículo.';
+                            return;
+                        }
+
+                        this.modal.hide();
+                        this.mensaje = this.modoEdicion
+                            ? 'Vehículo actualizado.'
+                            : 'Vehículo creado.';
+                        this.errorGeneral = '';
+                        await this.buscar(this.pagina);
+                    } catch {
+                        this.errorGeneral = 'No se pudo guardar el vehículo.';
+                    } finally {
+                        this.guardando = false;
+                    }
+                },
+                async darDeBaja(vehiculo) {
+                    if (!window.confirm(`¿Dar de baja el vehículo ${vehiculo.patente}?`)) {
+                        return;
+                    }
+
+                    this.errorGeneral = '';
+
+                    try {
+                        const respuesta = await fetch(`${urlBaja}?id=${vehiculo.id}`, {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': tokenAntiforgery }
+                        });
+
+                        if (!respuesta.ok) {
+                            this.errorGeneral = 'No se pudo dar de baja el vehículo.';
+                            return;
+                        }
+
+                        this.mensaje = `Vehículo ${vehiculo.patente} dado de baja.`;
+                        await this.buscar(this.pagina);
+                    } catch {
+                        this.errorGeneral = 'No se pudo dar de baja el vehículo.';
+                    }
+                }
+            }
+        }).mount('#app-vehiculos');
+    </script>
+}
