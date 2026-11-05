@@ -36,6 +36,13 @@
             <button type="submit" class="btn btn-primary">Guardar</button>
             <a asp-action="Index" class="btn btn-secondary">Volver</a>
         </form>
+
+        @if (!string.IsNullOrEmpty(Model.Avatar))
+        {
+            <form asp-action="EliminarAvatar" method="post" class="mt-3">
+                <button type="submit" class="btn btn-outline-danger btn-sm">Eliminar avatar</button>
+            </form>
+        }
     </div>
 </div>
 

@@ -483,9 +483,10 @@ $RECYCLE.BIN/
 
 # Otro 
 Consigna.md
+consigna2.md
 AGENTS.md
 
 .vscode/
 
 # Archivos subidos en runtime (avatares, imágenes de vehículos)
-wwwroot/uploads/
+# wwwroot/uploads/

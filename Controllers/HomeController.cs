@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using alquiler_vehiculos_g11.Models;
+using alquiler_vehiculos_g11.Models.ViewModels;
 
 namespace alquiler_vehiculos_g11.Controllers;
 
@@ -20,8 +20,20 @@ public class HomeController : Controller
 
     [AllowAnonymous]
     [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-    public IActionResult Error()
+    public IActionResult Error(int? code)
     {
-        return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        return View(new ErrorViewModel
+        {
+            RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+            StatusCode = code
+        });
     }
+
+    [AllowAnonymous]
+    [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+    public IActionResult AccesoDenegado() => View("Error", new ErrorViewModel
+    {
+        RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier,
+        StatusCode = 403
+    });
 }

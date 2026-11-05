@@ -1,6 +1,10 @@
-@model IEnumerable<UsuarioListaViewModel>
+@model ResultadoPaginado<UsuarioListaViewModel>
 @{
     ViewData["Title"] = "Usuarios";
+
+    var totalPaginas = Math.Max(
+        1,
+        (int)Math.Ceiling(Model.TotalRegistros / (double)Model.TamanioPagina));
 }
 
 <h1>Usuarios</h1>
@@ -20,7 +24,7 @@
         </tr>
     </thead>
     <tbody>
-        @foreach (var usuario in Model)
+        @foreach (var usuario in Model.Elementos)
         {
             <tr>
                 <td>@usuario.Apellido, @usuario.Nombre</td>
@@ -40,3 +44,17 @@
         }
     </tbody>
 </table>
+
+<div class="d-flex align-items-center gap-2">
+    @if (Model.Pagina > 1)
+    {
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-pagina="@(Model.Pagina - 1)">Anterior</a>
+    }
+
+    <span>Página @Model.Pagina de @totalPaginas — @Model.TotalRegistros usuario(s)</span>
+
+    @if (Model.Pagina < totalPaginas)
+    {
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Index" asp-route-pagina="@(Model.Pagina + 1)">Siguiente</a>
+    }
+</div>

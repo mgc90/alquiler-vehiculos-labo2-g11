@@ -2,6 +2,9 @@
 
 namespace alquiler_vehiculos_g11.Repositories;
 
-public interface IUsuarioRepository : IWriteRepository<ApplicationUser>
+public interface IUsuarioRepository
 {
+    Task<ResultadoPaginado<ApplicationUser>> ObtenerPaginadoAsync(
+        int pagina,
+        int tamanioPagina);
 }

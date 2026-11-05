@@ -271,13 +271,33 @@ Aplicación web desarrollada en **ASP.NET Core MVC** con:
 
 ## 🗄️ Modelo de Datos (Entidades)
 
+📊 **Diagrama Entidad-Relación (DER):** [`diagram/ERD.png`](diagram/ERD.png)
+
+![Diagrama Entidad-Relación](diagram/ERD.png)
+
 * **Usuario:** `Id`, `Email`, `PasswordHash`, `Nombre`, `Apellido`, `Avatar`, `Rol`, `Activo`
 * **Cliente:** `Id`, `Dni`, `Nombre`, `Apellido`, `FechaNacimiento`, `Telefono`, `Email`, `NumeroLicencia`, `VencimientoLicencia`, `Activo`
 * **CategoriaVehiculo:** `Id`, `Nombre`, `Descripcion`, `PrecioDiario`, `DepositoGarantia`, `Activa`
 * **Vehiculo:** `Id`, `CategoriaVehiculoId`, `Patente`, `Marca`, `Modelo`, `KilometrajeActual`, `EstadoOperativo` *(Habilitado / Mantenimiento / Baja)*
 * **Alquiler:** `Id`, `ClienteId`, `VehiculoId`, `CreadoPorUsuarioId`, `CerradoPorUsuarioId`, `EntregaPrevista`, `DevolucionPrevista`, `EntregaReal`, `DevolucionReal`, `PrecioAcordado`, `Observaciones`, `Multa`, `ImporteTotal`, `Estado` *(Reservado / EnCurso / Finalizado / Cancelado)*
 * **Pago:** `Id`, `AlquilerId`, `CreadoPorUsuarioId`, `AnuladoPorUsuarioId`, `Fecha`, `FechaAnulacion`, `Importe`, `Tipo`, `MedioPago`, `Estado` *(Vigente / Anulado)*
-* **Imagen:** `Id`, `idVehiculo`, `titulo`, `url`, `descripcion`, `idAlquiler` *(Opcional para registro de daños)*
+* **Imagen:** `Id`, `VehiculoId`, `Titulo`, `Url`, `Descripcion`, `AlquilerId` *(Opcional para registro de daños)*
+
+---
+
+## 📊 Matriz de Evidencias de Requerimientos Mínimos
+
+| Requerimiento Mínimo | Estado | Enlace al Código / Controladores | Evidencia (Captura / GIF / Video) |
+|---|:---:|---|---|
+| **1. Modelo de Datos y Persistencia** — 6+ tablas, relación 1:N y entidad que depende de otras dos | ✅ Cumplido | [`Data/ApplicationDbContext.cs`](Data/ApplicationDbContext.cs) · [`Models/Alquiler.cs`](Models/Alquiler.cs) · [`Models/Imagen.cs`](Models/Imagen.cs) | [`diagram/ERD.png`](diagram/ERD.png) |
+| **2. Seguridad, Autenticación y Roles** — login/logout, roles, función restringida y avatar | ✅ Cumplido | [`Controllers/AccesoController.cs`](Controllers/AccesoController.cs) · [`Controllers/PerfilController.cs`](Controllers/PerfilController.cs) · [`Program.cs`](Program.cs) · [`Controllers/UsuariosController.cs`](Controllers/UsuariosController.cs) | Captura del perfil con avatar y del “Acceso denegado” con rol Empleado *(pendiente)* |
+| **3. Manejo de Archivos** — adicional al avatar | ✅ Cumplido | [`Controllers/ImagenesController.cs`](Controllers/ImagenesController.cs) (portadas) · [`Controllers/AlquileresController.cs`](Controllers/AlquileresController.cs) (fotos de daños) · [`Views/Alquileres/Devolver.cshtml`](Views/Alquileres/Devolver.cshtml) | GIF de subida de portada y de fotos de devolución *(pendiente)* |
+| **4. Módulo SPA / AJAX con Vue.js** — ABM completo sin recargar | ✅ Cumplido | [`Views/Vehiculos/Index.cshtml`](Views/Vehiculos/Index.cshtml) · [`Controllers/VehiculosController.cs`](Controllers/VehiculosController.cs) | GIF del ABM de vehículos *(pendiente)* |
+| **5. Paginado por Servidor** | ✅ Cumplido | [`Repositories/Paginacion.cs`](Repositories/Paginacion.cs) · [`Models/ResultadoPaginado.cs`](Models/ResultadoPaginado.cs) · [`Controllers/UsuariosController.cs`](Controllers/UsuariosController.cs) · [`Controllers/ClientesController.cs`](Controllers/ClientesController.cs) | Captura del inspector de red con `?pagina=2` y el `LIMIT/OFFSET` *(pendiente)* |
+| **6. Búsqueda Asíncrona de Entidades Relacionadas** | ✅ Cumplido | [`Controllers/AlquileresController.cs`](Controllers/AlquileresController.cs) (`BuscarClientes`, `Disponibles`) · [`Views/Alquileres/NuevaReserva.cshtml`](Views/Alquileres/NuevaReserva.cshtml) | GIF buscando cliente/vehículo en el formulario de reserva *(pendiente)* |
+| **7. Web API REST con JWT** | ✅ Cumplido | [`API/AuthController.cs`](API/AuthController.cs) · [`API/VehiculosController.cs`](API/VehiculosController.cs) · [`API/AlquileresController.cs`](API/AlquileresController.cs) · [`Program.cs`](Program.cs) | [`Colección Postman`](docs/postman/AlquilerVehiculos-API.postman_collection.json) + captura con Bearer Token *(pendiente)* |
+
+**Nota sobre el paginado:** todos los listados principales lo usan (Clientes, Vehículos, Alquileres, Pagos, Usuarios, Informes y Auditoría). `Categorías` es la única tabla sin paginar, por ser una tabla maestra pequeña exceptuada por la consigna.
 
 ---
 

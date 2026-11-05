@@ -53,6 +53,7 @@ builder.Services.AddScoped<IAlquilerService, AlquilerService>();
 builder.Services.AddScoped<IPagoService, PagoService>();
 builder.Services.AddScoped<IAuditoriaRepository, AuditoriaRepository>();
 builder.Services.AddScoped<IInformeClientesRepository, ClienteInformeRepository>();
+builder.Services.AddScoped<IUsuarioRepository, UsuarioRepository>();
 
 
 
@@ -72,7 +73,7 @@ builder.Services.ConfigureApplicationCookie(options =>
 {
     options.LoginPath = "/Acceso/Login";
     options.LogoutPath = "/Acceso/Logout";
-    options.AccessDeniedPath = "/Home/Error";
+    options.AccessDeniedPath = "/Home/AccesoDenegado";
 });
 
 builder.Services.AddAuthentication()
@@ -193,10 +194,14 @@ if (app.Environment.IsDevelopment())
 
 if (!app.Environment.IsDevelopment())
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/Home/Error?code=500");
     // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
+app.UseWhen(
+    contexto => !contexto.Request.Path.StartsWithSegments("/api"),
+    rama => rama.UseStatusCodePagesWithReExecute("/Home/Error", "?code={0}"));
 
 app.UseHttpsRedirection();
 app.UseRouting();

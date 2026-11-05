@@ -1,36 +1,39 @@
 using alquiler_vehiculos_g11.Models;
 using alquiler_vehiculos_g11.Models.ViewModels;
+using alquiler_vehiculos_g11.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Rendering;
-using Microsoft.EntityFrameworkCore;
 
 namespace alquiler_vehiculos_g11.Controllers;
 
 [Authorize(Roles = "Administrador")]
 public class UsuariosController : Controller
 {
+    private const int TamPagina = 10;
+
     private static readonly string[] Roles = { "Administrador", "Empleado" };
 
     private readonly UserManager<ApplicationUser> _userManager;
+    private readonly IUsuarioRepository _usuarioRepository;
 
-    public UsuariosController(UserManager<ApplicationUser> userManager)
+    public UsuariosController(
+        UserManager<ApplicationUser> userManager,
+        IUsuarioRepository usuarioRepository)
     {
         _userManager = userManager;
+        _usuarioRepository = usuarioRepository;
     }
 
     [HttpGet]
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(int pagina = 1)
     {
+        var resultado = await _usuarioRepository.ObtenerPaginadoAsync(pagina, TamPagina);
+
         var usuarios = new List<UsuarioListaViewModel>();
 
-        var lista = await _userManager.Users
-            .OrderBy(u => u.Apellido)
-            .ThenBy(u => u.Nombre)
-            .ToListAsync();
-
-        foreach (var usuario in lista)
+        foreach (var usuario in resultado.Elementos)
         {
             usuarios.Add(new UsuarioListaViewModel
             {
@@ -43,7 +46,11 @@ public class UsuariosController : Controller
             });
         }
 
-        return View(usuarios);
+        return View(new ResultadoPaginado<UsuarioListaViewModel>(
+            usuarios,
+            resultado.TotalRegistros,
+            resultado.Pagina,
+            resultado.TamanioPagina));
     }
 
     [HttpGet]

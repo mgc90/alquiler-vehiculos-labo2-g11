@@ -117,6 +117,33 @@ public class PerfilController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> EliminarAvatar()
+    {
+        var usuario = await _userManager.GetUserAsync(User);
+        if (usuario is null)
+        {
+            return RedirectToAction("Login", "Acceso");
+        }
+
+        if (!string.IsNullOrEmpty(usuario.Avatar))
+        {
+            usuario.Avatar = null;
+            var resultado = await _userManager.UpdateAsync(usuario);
+
+            if (!resultado.Succeeded)
+            {
+                AgregarErrores(resultado);
+                return RedirectToAction(nameof(Edit));
+            }
+
+            TempData["Mensaje"] = "Avatar eliminado.";
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
     [HttpGet]
     public IActionResult CambiarContrasena() => View(new CambiarContrasenaViewModel());
 

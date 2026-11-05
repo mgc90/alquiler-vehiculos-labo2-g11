@@ -1,1 +1,22 @@
-<h1>Error</h1>
+@model ErrorViewModel
+@{
+    ViewData["Title"] = "Error";
+
+    var (titulo, mensaje) = Model.StatusCode switch
+    {
+        403 => ("Acceso denegado", "No tenés permisos para acceder a esta sección."),
+        404 => ("Página no encontrada", "La dirección solicitada no existe."),
+        _ => ("Ocurrió un error", "No pudimos completar la operación. Intentá nuevamente.")
+    };
+}
+
+<div class="text-center mt-5">
+    <h1>@titulo</h1>
+    <p class="lead">@mensaje</p>
+    <a asp-controller="Home" asp-action="Index" class="btn btn-primary">Volver al inicio</a>
+
+    @if (Model.ShowRequestId)
+    {
+        <p class="text-muted small mt-4">Referencia: @Model.RequestId</p>
+    }
+</div>
