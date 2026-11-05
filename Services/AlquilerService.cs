@@ -391,7 +391,19 @@ public class AlquilerService : IAlquilerService
             ?? throw new InvalidOperationException("El alquiler no existe.");
 
         string descripcion = "";
-        descripcion = alquiler.Observaciones.Split("Observaciones del empleado:")[1].Trim();
+        if (!string.IsNullOrWhiteSpace(alquiler.Observaciones))
+        {
+            const string marcador = "Observaciones del empleado:";
+
+            int indice = alquiler.Observaciones.IndexOf(marcador);
+
+            if (indice >= 0)
+            {
+                descripcion = alquiler.Observaciones
+                    .Substring(indice + marcador.Length)
+                    .Trim();
+            }
+        }
 
         foreach (var url in urls)
         {
