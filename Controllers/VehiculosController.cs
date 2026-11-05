@@ -16,12 +16,16 @@ public class VehiculosController : Controller
     private readonly IVehiculoRepository _vehiculoRepository;
     private readonly ICategoriaVehiculoRepository _categoriaRepository;
 
+    private readonly IImagenRepository _imagenRepository;
+
     public VehiculosController(
         IVehiculoRepository vehiculoRepository,
-        ICategoriaVehiculoRepository categoriaRepository)
+        ICategoriaVehiculoRepository categoriaRepository,
+        IImagenRepository imagenRepository)
     {
         _vehiculoRepository = vehiculoRepository;
         _categoriaRepository = categoriaRepository;
+        _imagenRepository = imagenRepository;
     }
 
     [HttpGet]
@@ -34,6 +38,10 @@ public class VehiculosController : Controller
             termino?.Trim() ?? string.Empty,
             pagina,
             TamPagina);
+
+        var portadas = await _imagenRepository.ObtenerPortadasPorVehiculosAsync(
+        resultado.Elementos.Select(v => v.Id));
+        
 
         return Json(new
         {
@@ -49,7 +57,8 @@ public class VehiculosController : Controller
                 vehiculo.KilometrajeActual,
                 EstadoOperativo = vehiculo.EstadoOperativo.ToString(),
                 vehiculo.CategoriaVehiculoId,
-                Categoria = vehiculo.CategoriaVehiculo?.Nombre
+                Categoria = vehiculo.CategoriaVehiculo?.Nombre,
+                PortadaUrl = portadas.GetValueOrDefault(vehiculo.Id)
             })
         });
     }

@@ -18,17 +18,24 @@ public class AlquileresController : Controller
     private readonly IAlquilerRepository _alquilerRepository;
     private readonly IVehiculoRepository _vehiculoRepository;
     private readonly IClienteRepository _clienteRepository;
+    private readonly IWebHostEnvironment _env;
+
+    private static readonly string[] ExtensionesPermitidas = { ".jpg", ".jpeg", ".png", ".webp" };
+    private const long MaxBytesImagen = 5 * 1024 * 1024;
+    private const int MaxImagenes = 6;
 
     public AlquileresController(
         IAlquilerService alquilerService,
         IAlquilerRepository alquilerRepository,
         IVehiculoRepository vehiculoRepository,
-        IClienteRepository clienteRepository)
+        IClienteRepository clienteRepository,
+        IWebHostEnvironment env)
     {
         _alquilerService = alquilerService;
         _alquilerRepository = alquilerRepository;
         _vehiculoRepository = vehiculoRepository;
         _clienteRepository = clienteRepository;
+        _env = env;
     }
 
     [HttpGet]
@@ -383,16 +390,32 @@ public class AlquileresController : Controller
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Devolver(int alquilerId, int kilometrajeDevolucion, decimal costosDanios, string? observaciones)
+    public async Task<IActionResult> Devolver(
+        int alquilerId, int kilometrajeDevolucion, decimal costosDanios, 
+        string? observaciones, List<IFormFile>? imagenes)
     {
         try
         {
+            if (imagenes == null)
+            {
+                imagenes = new List<IFormFile>();
+            }
+            
+            ValidarImagenes(imagenes);
+
             var usuarioId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
 
             var devolucionReal = DateTime.Now;
 
             var alquiler = await _alquilerService.RegistrarDevolucionAsync(
                 alquilerId, usuarioId, devolucionReal, kilometrajeDevolucion, costosDanios, observaciones);
+
+
+            if (imagenes.Count > 0)
+            {
+                var rutas = await GuardarImagenesAsync(alquiler.Id, imagenes);
+                await _alquilerService.AgregarImagenesAsync(alquiler.Id, rutas);
+            }
 
             return RedirectToAction(nameof(DetalleDevolucion), new { id = alquiler.Id });
         }
@@ -558,4 +581,34 @@ public class AlquileresController : Controller
         }
     }
 
+    private static void ValidarImagenes(List<IFormFile> imagenes)
+    {
+        if (imagenes.Count > MaxImagenes)
+            throw new ArgumentException($"Máximo {MaxImagenes} imágenes.");
+
+        foreach (var f in imagenes)
+        {
+            var ext = Path.GetExtension(f.FileName).ToLowerInvariant();
+            if (!ExtensionesPermitidas.Contains(ext) || !f.ContentType.StartsWith("image/"))
+                throw new ArgumentException($"'{f.FileName}' no es una imagen válida.");
+            if (f.Length == 0 || f.Length > MaxBytesImagen)
+                throw new ArgumentException($"'{f.FileName}' supera los 5 MB o está vacía.");
+        }
+    }
+
+    private async Task<List<string>> GuardarImagenesAsync(int alquilerId, List<IFormFile> imagenes)
+    {
+        var carpeta = Path.Combine(_env.WebRootPath, "uploads", "alquileres", alquilerId.ToString());
+        Directory.CreateDirectory(carpeta);
+
+        var rutas = new List<string>();
+        foreach (var f in imagenes)
+        {
+            var nombre = $"{Guid.NewGuid()}{Path.GetExtension(f.FileName).ToLowerInvariant()}";
+            await using var stream = System.IO.File.Create(Path.Combine(carpeta, nombre));
+            await f.CopyToAsync(stream);
+            rutas.Add($"/uploads/alquileres/{alquilerId}/{nombre}");
+        }
+        return rutas;
+    }
 }

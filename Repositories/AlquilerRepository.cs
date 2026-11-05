@@ -79,6 +79,7 @@ public class AlquilerRepository : IAlquilerRepository
         .Include(alquiler => alquiler.Vehiculo)
             .ThenInclude(vehiculo => vehiculo!.CategoriaVehiculo)
         .Include(alquiler => alquiler.Pagos)
+        .Include(alquiler => alquiler.Imagenes)
         .Include(alquiler => alquiler.CreadoPorUsuario)
         .Include(alquiler => alquiler.CerradoPorUsuario)
         .FirstOrDefaultAsync(alquiler => alquiler.Id == alquilerId);

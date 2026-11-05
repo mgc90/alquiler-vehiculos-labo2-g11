@@ -156,6 +156,24 @@
             </div>
         }
 
+        @if (Model.Imagenes.Any())
+        {
+            <div class="card mb-3">
+                <div class="card-header">Imágenes de la devolución</div>
+                <div class="card-body">
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var img in Model.Imagenes)
+                        {
+                            <a href="@img.Url" target="_blank">
+                                <img src="@img.Url" alt="@img.Titulo" class="img-thumbnail"
+                                     style="width:150px;height:150px;object-fit:cover;" />
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+
         <div class="d-flex gap-2">
             <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary">
                 Ver alquiler

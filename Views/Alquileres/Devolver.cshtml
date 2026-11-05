@@ -8,7 +8,7 @@
 
 <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
-<form asp-action="Devolver" method="post" class="mt-4">
+<form asp-action="Devolver" method="post" enctype="multipart/form-data" class="mt-4">
     <div class="d-flex justify-content-center justify-items-center">
         <div class="card mb-3 w-25">
             <div class="card-header">1. Categoría</div>
@@ -84,6 +84,13 @@
                     <textarea id="observacionesDevolucion" name="observaciones"
                             class="form-control" rows="3" maxlength="500"></textarea>
                 </div>
+                <div class="mb-0 mt-3">
+                    <label for="imagenesDanios" class="form-label">Adjuntar fotos de daños (opcional)</label>
+                    <input type="file" id="imagenesDanios" name="imagenes"
+                        class="form-control" accept="image/*" multiple />
+                    <div class="form-text">Máximo 6 imágenes, 5 MB cada una.</div>
+                    <div id="previewImagenes" class="d-flex flex-wrap gap-2 mt-2"></div>
+                </div>
             </div>
         </div>
     </div>
@@ -132,6 +139,13 @@
         const inpKm = document.getElementById("kilometrajeDevolucion");
         const inpCostos = document.getElementById("costosDanios");
         const txtObservaciones = document.getElementById("observacionesDevolucion");
+
+        const inpImagenes = document.getElementById("imagenesDanios");
+        const preview = document.getElementById("previewImagenes");
+        const MAX_IMAGENES = 6;
+        const MAX_BYTES = 5 * 1024 * 1024;
+        let archivos = new DataTransfer();
+
 
         let datosImporte = null;
 
@@ -221,6 +235,7 @@
             inpKm.value = d.kilometraje;
             inpCostos.value = 0;
             txtObservaciones.value = "";
+            limpiarImagenes()
 
             datosImporte = d;
             actualizarResumen();
@@ -230,6 +245,58 @@
             panelImporte.classList.remove("d-none");
             btnConfirmar.disabled = false;
         }
+
+        function renderPreview() {
+            preview.querySelectorAll("img").forEach(i => URL.revokeObjectURL(i.src));
+            preview.innerHTML = "";
+
+            [...archivos.files].forEach((file, idx) => {
+                const wrap = document.createElement("div");
+                wrap.className = "position-relative";
+
+                const img = document.createElement("img");
+                img.src = URL.createObjectURL(file);
+                img.className = "img-thumbnail";
+                img.style.cssText = "width:120px;height:120px;object-fit:cover;";
+
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.className = "btn-close position-absolute top-0 end-0 m-1 bg-white";
+                btn.addEventListener("click", () => quitarImagen(idx));
+
+                wrap.append(img, btn);
+                preview.appendChild(wrap);
+            });
+        }
+
+        function quitarImagen(idx) {
+            const nuevo = new DataTransfer();
+
+            [...archivos.files].forEach((f, i) => { 
+                if (i !== idx) nuevo.items.add(f); 
+            });
+
+            archivos = nuevo;
+            inpImagenes.files = archivos.files;
+            renderPreview();
+        }
+
+        function limpiarImagenes() {
+            archivos = new DataTransfer();
+            inpImagenes.value = "";
+            renderPreview();
+        }
+
+        inpImagenes.addEventListener("change", () => {
+            for (const f of inpImagenes.files) {
+                if (!f.type.startsWith("image/")) continue;
+                if (f.size > MAX_BYTES) { alert(`${f.name} supera los 5 MB`); continue; }
+                if (archivos.files.length >= MAX_IMAGENES) { alert("Máximo 6 imágenes"); break; }
+                archivos.items.add(f);
+            }
+            inpImagenes.files = archivos.files;
+            renderPreview();
+        });
 
         selCategoria.addEventListener("change", cargarVehiculos);
         selVehiculo.addEventListener("change", cargarDetalle);

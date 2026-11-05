@@ -200,6 +200,30 @@
     </div>
 </div>
 
+<div class="card mb-3">
+    <div class="card-header">Imágenes de la devolución</div>
+    <div class="card-body">
+        @if (Model.Imagenes.Any())
+        {
+            <div class="d-flex flex-wrap gap-2">
+                @foreach (var img in Model.Imagenes)
+                {
+                    <a href="@img.Url" target="_blank">
+                        <img src="@img.Url" alt="@img.Titulo" class="img-thumbnail"
+                                style="width:150px;height:150px;object-fit:cover;" />
+                    </a>
+                }
+            </div>
+        }
+        else
+        {
+            <p class="text-muted mb-0">No hay imágenes subidas.</p>
+        }
+    </div>
+</div>
+
+
+
 @if (esAdministrador)
 {
     <div class="card mb-3">

@@ -10,14 +10,18 @@ public class AlquilerService : IAlquilerService
     private readonly IVehiculoRepository _vehiculoRepository;
     private readonly IClienteRepository _clienteRepository;
 
+    private readonly IImagenRepository _imagenRepository;
+
     public AlquilerService(
         IAlquilerRepository alquilerRepository,
         IVehiculoRepository vehiculoRepository,
-        IClienteRepository clienteRepository)
+        IClienteRepository clienteRepository,
+        IImagenRepository imagenRepository)
     {
         _alquilerRepository = alquilerRepository;
         _vehiculoRepository = vehiculoRepository;
         _clienteRepository = clienteRepository;
+        _imagenRepository = imagenRepository;
     }
 
     public Task<ResultadoPaginado<Vehiculo>> BuscarDisponiblesAsync(
@@ -379,5 +383,42 @@ public class AlquilerService : IAlquilerService
     public Task<Alquiler?> ObtenerPorIdAsync(int id)
     {
         return _alquilerRepository.ObtenerPorIdAsync(id);
+    }
+
+    public async Task AgregarImagenesAsync(int alquilerId, IEnumerable<string> urls)
+    {
+        var alquiler = await _alquilerRepository.ObtenerPorIdAsync(alquilerId)
+            ?? throw new InvalidOperationException("El alquiler no existe.");
+
+        string descripcion = "";
+        descripcion = alquiler.Observaciones.Split("Observaciones del empleado:")[1].Trim();
+
+        foreach (var url in urls)
+        {
+
+            var imagen = new Imagen
+            {
+                VehiculoId = alquiler.VehiculoId,
+                AlquilerId = alquiler.Id,
+                Titulo = "Daño registrado en la devolución",
+                Descripcion = descripcion,
+                Url = url
+            };
+            
+            await _imagenRepository.AgregarAsync(imagen);
+
+            /*alquiler.Imagenes.Add(new Imagen
+            {
+                VehiculoId = alquiler.VehiculoId,
+                AlquilerId = alquiler.Id,
+                Titulo = "Daño registrado en la devolución",
+                Descripcion = descripcion,
+                Url = url
+            });*/
+
+            alquiler.Imagenes.Add(imagen);
+        }
+
+        await _alquilerRepository.ActualizarAsync(alquiler);
     }
 }

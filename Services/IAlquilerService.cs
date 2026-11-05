@@ -49,4 +49,7 @@ public interface IAlquilerService
         int usuarioId,
         DateTime entregaPrevista,
         DateTime devolucionPrevista);
+
+    Task AgregarImagenesAsync(int alquilerId, IEnumerable<string> urls);
+
 }

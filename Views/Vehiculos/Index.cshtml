@@ -23,7 +23,7 @@
                 <button type="button" class="btn btn-outline-secondary" v-on:click="buscar(1)">Buscar</button>
             </div>
         </div>
-        <div class="col-md-7 text-end">
+        <div class="col-md-7 text-end g-2">
             <button type="button" class="btn btn-primary" v-on:click="abrirAlta">Nuevo vehículo</button>
         </div>
     </div>
@@ -39,15 +39,16 @@
                 <th>Categoría</th>
                 <th>Kilometraje</th>
                 <th>Estado</th>
+                <th>Portada</th>
                 <th class="text-end">Acciones</th>
             </tr>
         </thead>
         <tbody>
             <tr v-if="cargando">
-                <td colspan="6" class="text-muted">Cargando...</td>
+                <td colspan="7" class="text-muted">Cargando...</td>
             </tr>
             <tr v-else-if="vehiculos.length === 0">
-                <td colspan="6" class="text-muted">Sin resultados.</td>
+                <td colspan="7" class="text-muted">Sin resultados.</td>
             </tr>
             <tr v-for="vehiculo in vehiculos" v-bind:key="vehiculo.id">
                 <td>{{ vehiculo.patente }}</td>
@@ -57,11 +58,25 @@
                 <td>
                     <span class="badge" v-bind:class="claseEstado(vehiculo.estadoOperativo)">{{ vehiculo.estadoOperativo }}</span>
                 </td>
+                <td>
+                    <img v-if="vehiculo.portadaUrl"
+                        v-bind:src="vehiculo.portadaUrl"
+                        v-bind:alt="vehiculo.patente"
+                        class="img-thumbnail"
+                        style="width:80px;height:60px;object-fit:cover;" />
+                    <span v-else class="text-muted small">Sin portada</span>
+                </td>
                 <td class="text-end">
                     <button type="button" class="btn btn-sm btn-outline-primary" v-on:click="abrirEdicion(vehiculo)">Editar</button>
                     <button type="button" class="btn btn-sm btn-outline-danger"
                             v-if="vehiculo.estadoOperativo !== 'Baja'"
                             v-on:click="darDeBaja(vehiculo)">Dar de baja</button>
+                    <button type="button" class="btn btn-sm btn-outline-success"
+                            v-if="!vehiculo.portadaUrl"
+                            v-on:click="abrirPortada(vehiculo)">Agregar portada</button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            v-else
+                            v-on:click="abrirPortada(vehiculo)">Editar portada</button>
                 </td>
             </tr>
         </tbody>
@@ -155,6 +170,64 @@
             </div>
         </div>
     </div>
+
+    <div class="modal fade" id="modalPortada" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" v-if="vehiculoPortada">
+                        Portada de {{ vehiculoPortada.marca }} {{ vehiculoPortada.modelo }} ({{ vehiculoPortada.categoria }})
+                    </h5>
+                    <button type="button" class="btn-close" v-on:click="cerrarPortada" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-danger" v-if="errorPortada">{{ errorPortada }}</div>
+
+                    <!-- Portada actual (solo si existe y no se eligió una nueva) -->
+                    <div class="mb-3" v-if="vehiculoPortada && vehiculoPortada.portadaUrl && !previewPortada">
+                        <label class="form-label">Portada actual</label>
+                        <div>
+                            <img v-bind:src="vehiculoPortada.portadaUrl" class="img-thumbnail"
+                                style="max-width:100%;max-height:220px;object-fit:cover;" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">
+                            {{ vehiculoPortada && vehiculoPortada.portadaUrl ? 'Elegir nueva imagen' : 'Elegir imagen' }}
+                        </label>
+                        <input type="file" class="form-control" ref="inputPortada"
+                            accept=".jpg,.jpeg,.png,.webp"
+                            v-on:change="elegirArchivoPortada" />
+                    </div>
+
+                    <!-- Vista previa de la imagen elegida -->
+                    <div v-if="previewPortada">
+                        <label class="form-label">Vista previa</label>
+                        <div>
+                            <img v-bind:src="previewPortada" class="img-thumbnail"
+                                style="max-width:100%;max-height:220px;object-fit:cover;" />
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <button type="button" class="btn btn-outline-danger"
+                            v-if="vehiculoPortada && vehiculoPortada.portadaUrl"
+                            v-bind:disabled="guardandoPortada"
+                            v-on:click="eliminarPortada">Borrar portada</button>
+                    <span v-else></span>
+                    <div>
+                        <button type="button" class="btn btn-secondary" v-on:click="cerrarPortada">Cancelar</button>
+                        <button type="button" class="btn btn-primary"
+                                v-bind:disabled="!archivoPortada || guardandoPortada"
+                                v-on:click="guardarPortada">
+                            {{ guardandoPortada ? 'Guardando...' : (vehiculoPortada && vehiculoPortada.portadaUrl ? 'Reemplazar' : 'Subir') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 @section Scripts {
@@ -165,6 +238,8 @@
         const urlActualizar = '@Url.Action("Actualizar", "Vehiculos")';
         const urlBaja = '@Url.Action("Baja", "Vehiculos")';
         const urlCategorias = '@Url.Action("Buscar", "CategoriasVehiculo")';
+        const urlGuardarPortada = '@Url.Action("GuardarPortada", "Imagenes")';
+        const urlEliminarPortada = '@Url.Action("EliminarPortada", "Imagenes")';
         const tokenAntiforgery = document.querySelector('input[name="__RequestVerificationToken"]').value;
 
         Vue.createApp({
@@ -185,7 +260,13 @@
                     categorias: [],
                     busquedaCategoria: '',
                     categoriaSeleccionada: null,
-                    modal: null
+                    modal: null,
+                    modalPortada: null,
+                    vehiculoPortada: null,
+                    archivoPortada: null,
+                    previewPortada: null,
+                    errorPortada: '',
+                    guardandoPortada: false
                 };
             },
             computed: {
@@ -195,6 +276,7 @@
             },
             mounted() {
                 this.modal = new bootstrap.Modal(document.getElementById('modalVehiculo'));
+                this.modalPortada = new bootstrap.Modal(document.getElementById('modalPortada'));
                 this.buscar(1);
             },
             methods: {
@@ -376,6 +458,122 @@
                         await this.buscar(this.pagina);
                     } catch {
                         this.errorGeneral = 'No se pudo dar de baja el vehículo.';
+                    }
+                },
+                abrirPortada(vehiculo) {
+                    this.vehiculoPortada = vehiculo;
+                    this.limpiarPortada();
+                    this.modalPortada.show();
+                },
+                cerrarPortada() {
+                    this.modalPortada.hide();
+                    this.limpiarPortada();
+                },
+                limpiarPortada() {
+                    if (this.previewPortada) {
+                        URL.revokeObjectURL(this.previewPortada);
+                    }
+                    this.archivoPortada = null;
+                    this.previewPortada = null;
+                    this.errorPortada = '';
+                    if (this.$refs.inputPortada) {
+                        this.$refs.inputPortada.value = '';
+                    }
+                },
+                elegirArchivoPortada(evento) {
+                    const archivo = evento.target.files[0];
+                    this.errorPortada = '';
+                    if (this.previewPortada) {
+                        URL.revokeObjectURL(this.previewPortada);
+                    }
+                    this.archivoPortada = null;
+                    this.previewPortada = null;
+
+                    if (!archivo) {
+                        return;
+                    }
+                    if (!archivo.type.startsWith('image/')) {
+                        this.errorPortada = 'El archivo debe ser una imagen.';
+                        evento.target.value = '';
+                        return;
+                    }
+                    if (archivo.size > 5 * 1024 * 1024) {
+                        this.errorPortada = 'La imagen supera los 5 MB.';
+                        evento.target.value = '';
+                        return;
+                    }
+
+                    this.archivoPortada = archivo;
+                    this.previewPortada = URL.createObjectURL(archivo);
+                },
+                async guardarPortada() {
+                    if (!this.archivoPortada) {
+                        return;
+                    }
+
+                    this.guardandoPortada = true;
+                    this.errorPortada = '';
+
+                    const datos = new FormData();
+                    datos.append('vehiculoId', this.vehiculoPortada.id);
+                    datos.append('imagen', this.archivoPortada);
+
+                    try {
+
+                        const respuesta = await fetch(urlGuardarPortada, {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': tokenAntiforgery },
+                            body: datos
+                        });
+
+                        if (!respuesta.ok) {
+                            const cuerpo = await respuesta.json().catch(() => ({}));
+                            this.errorPortada = cuerpo.error || 'No se pudo guardar la portada.';
+                            return;
+                        }
+
+                        const portadaVehiculo = `${this.vehiculoPortada.marca} ${this.vehiculoPortada.modelo}`;
+                        this.cerrarPortada();
+                        this.mensaje = `Portada de ${portadaVehiculo} guardada.`;
+                        await this.buscar(this.pagina);
+                    } catch {
+                        this.errorPortada = 'No se pudo guardar la portada.';
+                    } finally {
+                        this.guardandoPortada = false;
+                    }
+                },
+                async eliminarPortada() {
+                    if (!window.confirm('¿Borrar la portada de este vehículo?')) {
+                        return;
+                    }
+
+                    this.guardandoPortada = true;
+                    this.errorPortada = '';
+
+                    const datos = new FormData();
+                    datos.append('vehiculoId', this.vehiculoPortada.id);
+
+                    try {
+                        const respuesta = await fetch(urlEliminarPortada, {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': tokenAntiforgery },
+                            body: datos
+                        });
+
+                        if (!respuesta.ok) {
+                            const cuerpo = await respuesta.json().catch(() => ({}));
+                            this.errorPortada = cuerpo.error || 'No se pudo borrar la portada.';
+                            return;
+                        }
+
+                        const portadaVehiculo = `${this.vehiculoPortada.marca} ${this.vehiculoPortada.modelo}`;
+                        this.cerrarPortada();
+                        this.mensaje = `Portada de ${portadaVehiculo} eliminada.`;
+                        await this.buscar(this.pagina);
+                    } catch {
+                        this.errorPortada = 'No se pudo borrar la portada.';
+                    } finally {
+                        this.guardandoPortada = false;
                     }
                 }
             }

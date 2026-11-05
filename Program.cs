@@ -44,6 +44,7 @@ builder.Services.AddControllersWithViews(options =>
 });
 builder.Services.AddAntiforgery(options => options.HeaderName = "RequestVerificationToken");
 builder.Services.AddScoped<IVehiculoRepository, VehiculoRepository>();
+builder.Services.AddScoped<IImagenRepository, ImagenRepository>();
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
 builder.Services.AddScoped<ICategoriaVehiculoRepository, CategoriaVehiculoRepository>();
 builder.Services.AddScoped<IAlquilerRepository, AlquilerRepository>();
