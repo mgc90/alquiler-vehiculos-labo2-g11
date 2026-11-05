@@ -49,8 +49,17 @@ Al ejecutar las migraciones e iniciar la aplicación por primera vez, el *seeder
 
 2. **Configurar Credenciales Locales (User Secrets):**
    Para evitar exponer credenciales o contraseñas locales en el repositorio remoto (`appsettings.json`), utilizamos el Administrador de Secretos de .NET:
-   ```bash
+   Si el proyecto todavía no tiene configurado un `UserSecretsId`,
+   inicialízalo desde el directorio donde se encuentra el archivo
+   `.csproj`:
+
+   ``` bash
    dotnet user-secrets init
+   ```
+
+   A continuación, configura la cadena de conexión a tu base de datos:
+
+   ``` bash
    dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Database=alquiler_vehiculos;User=root;Password=tu_contraseña;"
    ```
    *(Si tu usuario `root` local de MySQL no utiliza contraseña, puedes dejar `Password=;`)*.
