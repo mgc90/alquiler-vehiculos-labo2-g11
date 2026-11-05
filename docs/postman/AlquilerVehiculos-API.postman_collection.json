@@ -1,0 +1,221 @@
+{
+  "info": {
+    "name": "Alquiler de Vehículos - API",
+    "description": "Colección de pruebas de la API REST de Alquiler de Vehículos.\n\nOrden recomendado:\n1. Ejecutar Login para obtener el JWT. El script guarda el token en la variable de colección token.\n2. Ejecutar Disponibles y Estado; ambas solicitudes usan Bearer {{token}}.\n\nAntes de ejecutar, reemplazar email y password por credenciales de prueba válidas. No se incluyen credenciales reales ni secretos.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Login exitoso\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "const respuesta = pm.response.json();",
+              "if (respuesta && respuesta.token) {",
+              "    pm.collectionVariables.set(\"token\", respuesta.token);",
+              "    console.log(\"Token JWT guardado en la variable token.\");",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{baseUrl}}/api/auth/login",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "description": "Autentica un usuario y devuelve un JWT. Las variables email y password son de ejemplo y deben reemplazarse por credenciales válidas de prueba."
+      },
+      "response": []
+    },
+    {
+      "name": "Vehículos disponibles",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Consulta de disponibilidad exitosa\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/vehiculos/disponibles?entregaPrevista={{entregaPrevista}}&devolucionPrevista={{devolucionPrevista}}&pagina={{pagina}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "vehiculos",
+            "disponibles"
+          ],
+          "query": [
+            {
+              "key": "entregaPrevista",
+              "value": "{{entregaPrevista}}",
+              "description": "Fecha y hora previstas de entrega, por ejemplo 2026-11-10T10:00:00."
+            },
+            {
+              "key": "devolucionPrevista",
+              "value": "{{devolucionPrevista}}",
+              "description": "Fecha y hora previstas de devolución; debe ser posterior a la entrega."
+            },
+            {
+              "key": "categoriaVehiculoId",
+              "value": "{{categoriaVehiculoId}}",
+              "description": "Opcional. Identificador de categoría de vehículo.",
+              "disabled": true
+            },
+            {
+              "key": "pagina",
+              "value": "{{pagina}}",
+              "description": "Número de página, desde 1."
+            },
+            {
+              "key": "alquilerExcluirId",
+              "value": "{{alquilerExcluirId}}",
+              "description": "Opcional. Alquiler a excluir al consultar una extensión.",
+              "disabled": true
+            }
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Consulta vehículos habilitados y disponibles para el rango de fechas indicado. Requiere JWT con rol Administrador o Empleado."
+      },
+      "response": []
+    },
+    {
+      "name": "Estado de alquiler",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Consulta de estado exitosa\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/api/alquileres/{{alquilerId}}/estado",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "api",
+            "alquileres",
+            "{{alquilerId}}",
+            "estado"
+          ]
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{token}}",
+              "type": "string"
+            }
+          ]
+        },
+        "description": "Obtiene el estado y las fechas de seguimiento de un alquiler. Requiere JWT con rol Administrador o Empleado. Cambiar la variable alquilerId por un ID existente."
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5119"
+    },
+    {
+      "key": "email",
+      "value": "usuario@ejemplo.com"
+    },
+    {
+      "key": "password",
+      "value": "ejemploContraseña"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "alquilerId",
+      "value": "1"
+    },
+    {
+      "key": "entregaPrevista",
+      "value": "2026-11-10T10:00:00"
+    },
+    {
+      "key": "devolucionPrevista",
+      "value": "2026-11-15T10:00:00"
+    },
+    {
+      "key": "categoriaVehiculoId",
+      "value": ""
+    },
+    {
+      "key": "alquilerExcluirId",
+      "value": ""
+    },
+    {
+      "key": "pagina",
+      "value": "1"
+    }
+  ]
+}

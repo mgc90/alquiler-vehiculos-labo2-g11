@@ -68,6 +68,158 @@ Al ejecutar las migraciones e iniciar la aplicación por primera vez, el *seeder
 
 ---
 
+## 🔐 Configuración y Uso de la Web API
+
+El proyecto incorpora una **Web API REST autenticada mediante JWT (JSON
+Web Token)**, independiente del mecanismo de autenticación por cookies
+utilizado por la aplicación MVC.
+
+La API permite consultar la disponibilidad de vehículos y el estado de
+los alquileres. Sus endpoints protegidos requieren un token JWT válido y
+un usuario con el rol correspondiente (`Administrador` o `Empleado`).
+
+### 1. Configurar la clave JWT
+
+Para utilizar la Web API es necesario configurar la clave de firma del
+token, identificada como `Jwt:Key`.
+
+Por razones de seguridad, esta clave no se encuentra almacenada en
+`appsettings.json`. Debe configurarse localmente mediante User Secrets:
+
+``` bash
+dotnet user-secrets set "Jwt:Key" "REEMPLAZAR_POR_UNA_CLAVE_SEGURA"
+```
+
+La clave debe ser segura y mantenerse fuera del repositorio. No debe
+compartirse ni publicarse.
+
+Los demás parámetros de JWT ya se encuentran definidos en
+`appsettings.json`:
+
+  Parámetro                 Valor
+  ------------------------- ------------------------
+  `Jwt:Issuer`              `AlquilerVehiculos`
+  `Jwt:Audience`            `AlquilerVehiculosApi`
+  `Jwt:ExpirationMinutes`   `60`
+
+### 2. Configuración en otros entornos
+
+En entornos distintos del desarrollo local, como producción, la clave
+JWT puede configurarse mediante una variable de entorno:
+
+``` bash
+Jwt__Key=REEMPLAZAR_POR_UNA_CLAVE_SEGURA
+```
+
+En la configuración de ASP.NET Core, los dos guiones bajos (`__`)
+representan los dos puntos (`:`) utilizados en las claves de
+configuración.
+
+La clave debe proporcionarse mediante un mecanismo seguro de
+configuración del entorno y nunca incorporarse al repositorio.
+
+### 3. Acceso a Swagger
+
+Con la aplicación en ejecución, la documentación interactiva de la Web
+API está disponible en:
+
+<http://localhost:5119/swagger>
+
+Desde Swagger se pueden consultar los endpoints disponibles y realizar
+solicitudes de prueba.
+
+Para utilizar los endpoints protegidos:
+
+1.  Ejecutar primero el endpoint `POST /api/auth/login`.
+2.  Obtener el token JWT devuelto en la respuesta.
+3.  Presionar el botón **Authorize** en Swagger.
+4.  Ingresar el token obtenido.
+5.  Ejecutar los endpoints protegidos.
+
+Swagger utilizará el esquema Bearer para enviar el token en las
+solicitudes.
+
+### 4. Endpoints disponibles
+
+  -------------------------------------------------------------------------------------
+  Método            Endpoint                        Descripción       Autenticación
+  ----------------- ------------------------------- ----------------- -----------------
+  `POST`            `/api/auth/login`               Valida las        No requiere token
+                                                    credenciales del  
+                                                    usuario y         
+                                                    devuelve un token 
+                                                    JWT con sus       
+                                                    roles.            
+
+  `GET`             `/api/vehiculos/disponibles`    Consulta los      JWT Bearer
+                                                    vehículos         
+                                                    disponibles para  
+                                                    un período        
+                                                    determinado.      
+
+  `GET`             `/api/alquileres/{id}/estado`   Consulta el       JWT Bearer
+                                                    estado y las      
+                                                    fechas relevantes 
+                                                    de un alquiler.   
+  -------------------------------------------------------------------------------------
+
+**Consulta de disponibilidad**
+
+El endpoint de vehículos disponibles admite los siguientes parámetros:
+
+-   `entregaPrevista`: fecha y hora prevista de entrega.
+-   `devolucionPrevista`: fecha y hora prevista de devolución.
+-   `categoriaVehiculoId`: identificador de categoría (opcional).
+-   `pagina`: número de página (opcional).
+-   `alquilerExcluirId`: identificador de alquiler a excluir del cálculo
+    (opcional).
+
+**Inicio de sesión**
+
+El endpoint `POST /api/auth/login` recibe las credenciales del usuario
+mediante un cuerpo JSON:
+
+``` json
+{
+  "email": "admin@drivecontrol.com",
+  "password": "Admin123!"
+}
+```
+
+Si las credenciales son válidas, devuelve el token JWT y la información
+del usuario autenticado, incluyendo sus roles y la fecha de expiración
+del token.
+
+**Consulta del estado de un alquiler**
+
+El endpoint `GET /api/alquileres/{id}/estado` requiere el identificador
+del alquiler en la ruta. Si el registro existe, devuelve la información
+de su estado y las fechas previstas y reales disponibles.
+
+### 5. Pruebas mediante Postman
+
+El proyecto incluye una colección de Postman para probar los endpoints
+de la Web API:
+
+`docs/postman/AlquilerVehiculos-API.postman_collection.json`
+
+Para utilizarla:
+
+1.  Abrir Postman e importar el archivo JSON de la colección.
+2.  Configurar las credenciales locales de un usuario de prueba con rol
+    `Administrador` o `Empleado`.
+3.  Ejecutar la solicitud de login.
+4.  La colección guarda automáticamente el token JWT recibido.
+5.  Ejecutar las solicitudes de disponibilidad y consulta del estado del
+    alquiler, que utilizan automáticamente el token guardado.
+
+**Importante:** para probar la consulta del estado es necesario disponer
+de un alquiler existente en la base de datos. Si se utiliza una base
+recién creada, primero debe registrarse un alquiler desde la aplicación.
+
+---
+
+
 ## 📌 Descripción de la Problemática y Solución
 
 ### Problemática

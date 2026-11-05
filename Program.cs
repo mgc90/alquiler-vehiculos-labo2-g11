@@ -1,9 +1,16 @@
+using alquiler_vehiculos_g11.Api;
 using alquiler_vehiculos_g11.Data;
 using alquiler_vehiculos_g11.Models;
 using alquiler_vehiculos_g11.Repositories;
 using alquiler_vehiculos_g11.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
+using System.Reflection;
+using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -67,9 +74,122 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Home/Error";
 });
 
+builder.Services.AddAuthentication()
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+
+            ValidateAudience = true,
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(
+                    builder.Configuration["Jwt:Key"]
+                    ?? throw new InvalidOperationException("Falta configurar Jwt:Key.")
+                )
+            ),
+
+            ValidateLifetime = true,
+            ClockSkew = TimeSpan.Zero,
+
+            NameClaimType = ClaimTypes.NameIdentifier,
+            RoleClaimType = ClaimTypes.Role,
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnTokenValidated = async context =>
+            {
+                var userManager = context.HttpContext.RequestServices
+                    .GetRequiredService<UserManager<ApplicationUser>>();
+
+                var identity = context.Principal?.Identity as ClaimsIdentity;
+
+                var userId = identity?.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+                if (identity == null || string.IsNullOrEmpty(userId))
+                {
+                    context.Fail("Token inválido.");
+                    return;
+                }
+
+                var usuario = await userManager.FindByIdAsync(userId);
+
+                if (usuario == null || !usuario.Activo)
+                {
+                    context.Fail("Usuario inexistente o inactivo.");
+                    return;
+                }
+
+                // se actualizan los roles en el token  
+                foreach (var claim in identity.FindAll(ClaimTypes.Role).ToList())
+                {
+                    identity.RemoveClaim(claim);
+                }
+
+                var rolesActuales = await userManager.GetRolesAsync(usuario);
+
+                foreach (var rol in rolesActuales)
+                {
+                    identity.AddClaim(new Claim(ClaimTypes.Role, rol));
+                }
+            }
+        };
+    });
+
+builder.Services.AddEndpointsApiExplorer();
+
+builder.Services.AddSwaggerGen(options =>
+{
+    options.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "API - Alquiler de Vehículos",
+        Version = "v1",
+        Description = "API REST del sistema de alquiler de vehículos."
+    });
+
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
+        In = ParameterLocation.Header,
+        Description = "Ingresá tu token JWT."
+    });
+
+    options.OperationFilter<SwaggerAuthorizeOperationFilter>();
+
+    options.DocInclusionPredicate((_, apiDesc) =>
+        apiDesc.RelativePath?.StartsWith("api/", StringComparison.OrdinalIgnoreCase) == true);
+
+    var archivoXml = Path.Combine(
+        AppContext.BaseDirectory,
+        $"{Assembly.GetExecutingAssembly().GetName().Name}.xml");
+
+    if (File.Exists(archivoXml))
+    {
+        options.IncludeXmlComments(archivoXml);
+    }
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.UseSwagger();
+    app.UseSwaggerUI(options =>
+    {
+        options.DocumentTitle = "Alquiler de Vehículos - API";
+        options.InjectStylesheet("/css/swagger-dark.css");
+    });
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
