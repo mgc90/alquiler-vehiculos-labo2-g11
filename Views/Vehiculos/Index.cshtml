@@ -160,6 +160,19 @@
                         </select>
                         <div class="text-danger small" v-if="primerError('EstadoOperativo')">{{ primerError('EstadoOperativo') }}</div>
                     </div>
+
+                    <div class="mb-3" v-if="!modoEdicion">
+                        <label for="imagenNuevaPortada" class="form-label">Foto de portada (opcional)</label>
+                        <input id="imagenNuevaPortada" type="file" class="form-control"
+                               accept=".jpg,.jpeg,.png,.webp"
+                               ref="inputNuevaPortada"
+                               v-on:change="elegirNuevaPortada" />
+                        <div class="form-text">JPG, PNG o WebP; máximo 5 MB.</div>
+                        <div class="text-danger small" v-if="errorNuevaPortada">{{ errorNuevaPortada }}</div>
+                        <img v-if="previewNuevaPortada" v-bind:src="previewNuevaPortada"
+                             alt="Vista previa de la portada" class="img-thumbnail mt-2"
+                             style="max-width:100%;max-height:180px;object-fit:cover;" />
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" v-on:click="cerrarModal">Cancelar</button>
@@ -266,7 +279,10 @@
                     archivoPortada: null,
                     previewPortada: null,
                     errorPortada: '',
-                    guardandoPortada: false
+                    guardandoPortada: false,
+                    archivoNuevaPortada: null,
+                    previewNuevaPortada: null,
+                    errorNuevaPortada: ''
                 };
             },
             computed: {
@@ -332,6 +348,7 @@
                 },
                 abrirAlta() {
                     this.modoEdicion = false;
+                    this.limpiarNuevaPortada();
                     this.formulario = this.formularioVacio();
                     this.categoriaSeleccionada = null;
                     this.busquedaCategoria = '';
@@ -342,6 +359,7 @@
                 },
                 abrirEdicion(vehiculo) {
                     this.modoEdicion = true;
+                    this.limpiarNuevaPortada();
                     this.formulario = {
                         id: vehiculo.id,
                         patente: vehiculo.patente,
@@ -362,6 +380,71 @@
                 },
                 cerrarModal() {
                     this.modal.hide();
+                    this.limpiarNuevaPortada();
+                },
+                limpiarNuevaPortada() {
+                    if (this.previewNuevaPortada) {
+                        URL.revokeObjectURL(this.previewNuevaPortada);
+                    }
+                    this.archivoNuevaPortada = null;
+                    this.previewNuevaPortada = null;
+                    this.errorNuevaPortada = '';
+                    if (this.$refs.inputNuevaPortada) {
+                        this.$refs.inputNuevaPortada.value = '';
+                    }
+                },
+                elegirNuevaPortada(evento) {
+                    const archivo = evento.target.files[0];
+                    this.errorNuevaPortada = '';
+                    if (this.previewNuevaPortada) {
+                        URL.revokeObjectURL(this.previewNuevaPortada);
+                    }
+                    this.archivoNuevaPortada = null;
+                    this.previewNuevaPortada = null;
+
+                    if (!archivo) {
+                        return;
+                    }
+
+                    const extension = archivo.name.includes('.')
+                        ? archivo.name.split('.').pop().toLowerCase()
+                        : '';
+                    if (!['jpg', 'jpeg', 'png', 'webp'].includes(extension)
+                        || !archivo.type.startsWith('image/')) {
+                        this.errorNuevaPortada = 'Elegí una imagen JPG, PNG o WebP.';
+                        evento.target.value = '';
+                        return;
+                    }
+                    if (archivo.size > 5 * 1024 * 1024) {
+                        this.errorNuevaPortada = 'La imagen supera los 5 MB.';
+                        evento.target.value = '';
+                        return;
+                    }
+
+                    this.archivoNuevaPortada = archivo;
+                    this.previewNuevaPortada = URL.createObjectURL(archivo);
+                },
+                async subirNuevaPortada(vehiculoId) {
+                    const datos = new FormData();
+                    datos.append('vehiculoId', vehiculoId);
+                    datos.append('imagen', this.archivoNuevaPortada);
+
+                    try {
+                        const respuesta = await fetch(urlGuardarPortada, {
+                            method: 'POST',
+                            headers: { 'RequestVerificationToken': tokenAntiforgery },
+                            body: datos
+                        });
+
+                        if (respuesta.ok) {
+                            return null;
+                        }
+
+                        const cuerpo = await respuesta.json().catch(() => ({}));
+                        return cuerpo.error || 'No se pudo subir la portada.';
+                    } catch {
+                        return 'No se pudo conectar para subir la portada.';
+                    }
                 },
                 async cargarCategorias() {
                     const parametros = new URLSearchParams({
@@ -396,6 +479,8 @@
 
                     this.guardando = true;
                     this.errores = {};
+                    const esAlta = !this.modoEdicion;
+                    const tienePortadaNueva = esAlta && !!this.archivoNuevaPortada;
 
                     const payload = {
                         ...this.formulario,
@@ -424,10 +509,25 @@
                             return;
                         }
 
+                        if (esAlta && this.archivoNuevaPortada) {
+                            const errorPortada = await this.subirNuevaPortada(datos.id);
+                            if (errorPortada) {
+                                this.modal.hide();
+                                this.limpiarNuevaPortada();
+                                this.mensaje = 'Vehículo creado.';
+                                this.errorGeneral = `El vehículo se creó, pero no se pudo subir la portada: ${errorPortada} Podés cargarla después con la opción de portada.`;
+                                await this.buscar(this.pagina);
+                                return;
+                            }
+                        }
+
                         this.modal.hide();
+                        this.limpiarNuevaPortada();
                         this.mensaje = this.modoEdicion
                             ? 'Vehículo actualizado.'
-                            : 'Vehículo creado.';
+                            : tienePortadaNueva
+                                ? 'Vehículo creado con portada.'
+                                : 'Vehículo creado.';
                         this.errorGeneral = '';
                         await this.buscar(this.pagina);
                     } catch {

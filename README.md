@@ -1,4 +1,4 @@
-# 🚗 DriveControl - Sistema de Gestión de Alquiler de Vehículos
+﻿# 🚗 DriveControl - Sistema de Gestión de Alquiler de Vehículos
 
 > **Sistema Web de Uso Interno Exclusivo** para la administración integral de los alquileres de una agencia de vehículos. Permite gestionar clientes, flota, categorías, reservas, cobros y auditoría interna.
 
@@ -69,6 +69,7 @@ Al ejecutar las migraciones e iniciar la aplicación por primera vez, el *seeder
    dotnet ef database update
    ```
 
+   **Alternativa:** también se puede importar [`database.sql`](database.sql) desde MySQL Workbench , DBeaver, u otros. Está pensado para una base nueva y crea el esquema, categorías, clientes y vehículos de demostración. Después de importarlo, configura la conexión como en el paso 2 e inicia la aplicación una vez: el inicializador crea los roles y usuarios de prueba, y completa los alquileres, pagos y registros de portadas.
 4. **Ejecutar la Aplicación:**
    ```bash
    dotnet run 
@@ -290,12 +291,14 @@ Aplicación web desarrollada en **ASP.NET Core MVC** con:
 | Requerimiento Mínimo | Estado | Enlace al Código / Controladores | Evidencia (Captura / GIF / Video) |
 |---|:---:|---|---|
 | **1. Modelo de Datos y Persistencia** — 6+ tablas, relación 1:N y entidad que depende de otras dos | ✅ Cumplido | [`Data/ApplicationDbContext.cs`](Data/ApplicationDbContext.cs) · [`Models/Alquiler.cs`](Models/Alquiler.cs) · [`Models/Imagen.cs`](Models/Imagen.cs) | [`diagram/ERD.png`](diagram/ERD.png) |
-| **2. Seguridad, Autenticación y Roles** — login/logout, roles, función restringida y avatar | ✅ Cumplido | [`Controllers/AccesoController.cs`](Controllers/AccesoController.cs) · [`Controllers/PerfilController.cs`](Controllers/PerfilController.cs) · [`Program.cs`](Program.cs) · [`Controllers/UsuariosController.cs`](Controllers/UsuariosController.cs) | Captura del perfil con avatar y del “Acceso denegado” con rol Empleado *(pendiente)* |
-| **3. Manejo de Archivos** — adicional al avatar | ✅ Cumplido | [`Controllers/ImagenesController.cs`](Controllers/ImagenesController.cs) (portadas) · [`Controllers/AlquileresController.cs`](Controllers/AlquileresController.cs) (fotos de daños) · [`Views/Alquileres/Devolver.cshtml`](Views/Alquileres/Devolver.cshtml) | GIF de subida de portada y de fotos de devolución *(pendiente)* |
-| **4. Módulo SPA / AJAX con Vue.js** — ABM completo sin recargar | ✅ Cumplido | [`Views/Vehiculos/Index.cshtml`](Views/Vehiculos/Index.cshtml) · [`Controllers/VehiculosController.cs`](Controllers/VehiculosController.cs) | GIF del ABM de vehículos *(pendiente)* |
-| **5. Paginado por Servidor** | ✅ Cumplido | [`Repositories/Paginacion.cs`](Repositories/Paginacion.cs) · [`Models/ResultadoPaginado.cs`](Models/ResultadoPaginado.cs) · [`Controllers/UsuariosController.cs`](Controllers/UsuariosController.cs) · [`Controllers/ClientesController.cs`](Controllers/ClientesController.cs) | Captura del inspector de red con `?pagina=2` y el `LIMIT/OFFSET` *(pendiente)* |
-| **6. Búsqueda Asíncrona de Entidades Relacionadas** | ✅ Cumplido | [`Controllers/AlquileresController.cs`](Controllers/AlquileresController.cs) (`BuscarClientes`, `Disponibles`) · [`Views/Alquileres/NuevaReserva.cshtml`](Views/Alquileres/NuevaReserva.cshtml) | GIF buscando cliente/vehículo en el formulario de reserva *(pendiente)* |
-| **7. Web API REST con JWT** | ✅ Cumplido | [`API/AuthController.cs`](API/AuthController.cs) · [`API/VehiculosController.cs`](API/VehiculosController.cs) · [`API/AlquileresController.cs`](API/AlquileresController.cs) · [`Program.cs`](Program.cs) | [`Colección Postman`](docs/postman/AlquilerVehiculos-API.postman_collection.json) + captura con Bearer Token *(pendiente)* |
+| **2. Seguridad, Autenticación y Roles** — login/logout, roles, función restringida y avatar | ✅ Cumplido | [`Controllers/AccesoController.cs`](Controllers/AccesoController.cs) · [`Controllers/PerfilController.cs`](Controllers/PerfilController.cs) · [`Program.cs`](Program.cs) · [`Controllers/UsuariosController.cs`](Controllers/UsuariosController.cs) | [Captura de avatar](docs/avatar.png) |
+| **3. Manejo de Archivos** — adicional al avatar | ✅ Cumplido | [`Controllers/ImagenesController.cs`](Controllers/ImagenesController.cs) (portadas) · [`Controllers/AlquileresController.cs`](Controllers/AlquileresController.cs) (fotos de daños) · [`Views/Alquileres/Devolver.cshtml`](Views/Alquileres/Devolver.cshtml) | [Video de carga de archivos](<docs/manejo de archivos.mp4>) |
+| **4. Módulo SPA / AJAX con Vue.js** — ABM completo sin recargar | ✅ Cumplido | [`Views/Vehiculos/Index.cshtml`](Views/Vehiculos/Index.cshtml) · [`Controllers/VehiculosController.cs`](Controllers/VehiculosController.cs) | [Video del ABM dinámico](docs/ABM.mp4) |
+| **5. Paginado por Servidor** | ✅ Cumplido | [`Repositories/Paginacion.cs`](Repositories/Paginacion.cs) · [`Models/ResultadoPaginado.cs`](Models/ResultadoPaginado.cs) · [`Controllers/UsuariosController.cs`](Controllers/UsuariosController.cs) · [`Controllers/ClientesController.cs`](Controllers/ClientesController.cs) | [Captura del paginado](docs/paginado.png) |
+| **6. Búsqueda Asíncrona de Entidades Relacionadas** | ✅ Cumplido | [`Controllers/AlquileresController.cs`](Controllers/AlquileresController.cs) (`BuscarClientes`, `Disponibles`) · [`Views/Alquileres/NuevaReserva.cshtml`](Views/Alquileres/NuevaReserva.cshtml) | [Video de selección asíncrona](<docs/seleccion asincrona.mp4>) |
+| **7. Web API REST con JWT** | ✅ Cumplido | [`API/AuthController.cs`](API/AuthController.cs) · [`API/VehiculosController.cs`](API/VehiculosController.cs) · [`API/AlquileresController.cs`](API/AlquileresController.cs) · [`Program.cs`](Program.cs) | [Captura de prueba en Postman](docs/postman.png) |
+
+
 
 **Nota sobre el paginado:** todos los listados principales lo usan (Clientes, Vehículos, Alquileres, Pagos, Usuarios, Informes y Auditoría). `Categorías` es la única tabla sin paginar, por ser una tabla maestra pequeña exceptuada por la consigna.
 
