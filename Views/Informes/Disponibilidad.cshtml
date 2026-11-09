@@ -6,75 +6,98 @@
         : (int)Math.Ceiling(Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina);
 }
 
-<h1>Disponibilidad de vehículos</h1>
+    <h1 class="mb-3">Disponibilidad de vehículos</h1>
 
-<form asp-action="Disponibilidad" method="get">
-    <label for="entregaPrevista">Entrega prevista</label>
-    <input id="entregaPrevista" name="entregaPrevista" type="date"
-           value="@Model.EntregaPrevista?.ToString("yyyy-MM-dd")" />
+    <form asp-action="Disponibilidad" method="get" class="card card-body mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="entregaPrevista" class="form-label">Entrega prevista</label>
+                <input id="entregaPrevista" name="entregaPrevista" type="date" class="form-control"
+                       value="@Model.EntregaPrevista?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4">
+                <label for="devolucionPrevista" class="form-label">Devolución prevista</label>
+                <input id="devolucionPrevista" name="devolucionPrevista" type="date" class="form-control"
+                       value="@Model.DevolucionPrevista?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4">
+                <label for="categoriaVehiculoId" class="form-label">Categoría (opcional)</label>
+                <select id="categoriaVehiculoId" name="categoriaVehiculoId" class="form-select">
+                    <option value="">Todas las categorías</option>
+                    @foreach (var categoria in Model.Categorias)
+                    {
+                        <option value="@categoria.Id" selected="@(Model.CategoriaVehiculoId == categoria.Id)">
+                            @categoria.Nombre
+                        </option>
+                    }
+                </select>
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+            </div>
+        </div>
+    </form>
 
-    <label for="devolucionPrevista">Devolución prevista</label>
-    <input id="devolucionPrevista" name="devolucionPrevista" type="date"
-           value="@Model.DevolucionPrevista?.ToString("yyyy-MM-dd")" />
-
-    <label for="categoriaVehiculoId">Categoría (opcional)</label>
-    <select id="categoriaVehiculoId" name="categoriaVehiculoId">
-        <option value="">Todas las categorías</option>
-        @foreach (var categoria in Model.Categorias)
-        {
-            <option value="@categoria.Id" selected="@(Model.CategoriaVehiculoId == categoria.Id)">
-                @categoria.Nombre
-            </option>
-        }
-    </select>
-    <button type="submit">Buscar</button>
-</form>
-
-@if (!string.IsNullOrEmpty(Model.Error))
-{
-    <p class="text-danger">@Model.Error</p>
-}
-
-@if (Model.Resultado is not null)
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Patente</th>
-                <th>Marca</th>
-                <th>Modelo</th>
-                <th>Categoría</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var vehiculo in Model.Resultado.Elementos)
-            {
-                <tr>
-                    <td>@vehiculo.Patente</td>
-                    <td>@vehiculo.Marca</td>
-                    <td>@vehiculo.Modelo</td>
-                    <td>@vehiculo.CategoriaVehiculo?.Nombre</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <p>@Model.Resultado.TotalRegistros vehículo(s) disponible(s)</p>
-    @if (Model.Resultado.Pagina > 1)
+    @if (!string.IsNullOrEmpty(Model.Error))
     {
-        <a asp-action="Disponibilidad"
-           asp-route-entregaPrevista="@Model.EntregaPrevista?.ToString("yyyy-MM-dd")"
-           asp-route-devolucionPrevista="@Model.DevolucionPrevista?.ToString("yyyy-MM-dd")"
-           asp-route-categoriaVehiculoId="@Model.CategoriaVehiculoId"
-           asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+        <div class="alert alert-danger" role="alert">@Model.Error</div>
     }
-    <span>Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
-    @if (Model.Resultado.Pagina < totalPaginas)
+
+    @if (Model.Resultado is not null)
     {
-        <a asp-action="Disponibilidad"
-           asp-route-entregaPrevista="@Model.EntregaPrevista?.ToString("yyyy-MM-dd")"
-           asp-route-devolucionPrevista="@Model.DevolucionPrevista?.ToString("yyyy-MM-dd")"
-           asp-route-categoriaVehiculoId="@Model.CategoriaVehiculoId"
-           asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Patente</th>
+                        <th>Marca</th>
+                        <th>Modelo</th>
+                        <th>Categoría</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var vehiculo in Model.Resultado.Elementos)
+                    {
+                        <tr>
+                            <td>@vehiculo.Patente</td>
+                            <td>@vehiculo.Marca</td>
+                            <td>@vehiculo.Modelo</td>
+                            <td>@vehiculo.CategoriaVehiculo?.Nombre</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted me-auto">@Model.Resultado.TotalRegistros vehículo(s) disponible(s)</span>
+            <nav aria-label="Paginación de disponibilidad">
+                <ul class="pagination pagination-sm mb-0">
+                    @if (Model.Resultado.Pagina > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Disponibilidad"
+                               asp-route-entregaPrevista="@Model.EntregaPrevista?.ToString("yyyy-MM-dd")"
+                               asp-route-devolucionPrevista="@Model.DevolucionPrevista?.ToString("yyyy-MM-dd")"
+                               asp-route-categoriaVehiculoId="@Model.CategoriaVehiculoId"
+                               asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+                        </li>
+                    }
+                    <li class="page-item disabled" aria-current="page">
+                        <span class="page-link">Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
+                    </li>
+                    @if (Model.Resultado.Pagina < totalPaginas)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="Disponibilidad"
+                               asp-route-entregaPrevista="@Model.EntregaPrevista?.ToString("yyyy-MM-dd")"
+                               asp-route-devolucionPrevista="@Model.DevolucionPrevista?.ToString("yyyy-MM-dd")"
+                               asp-route-categoriaVehiculoId="@Model.CategoriaVehiculoId"
+                               asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
     }
 }

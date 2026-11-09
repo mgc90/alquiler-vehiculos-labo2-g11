@@ -6,61 +6,84 @@
         : (int)Math.Ceiling(Model.Resultado.TotalRegistros / (double)Model.Resultado.TamanioPagina);
 }
 
-<h1>Alquileres vigentes por período</h1>
+    <h1 class="mb-3">Alquileres vigentes por período</h1>
 
-<form asp-action="AlquileresVigentes" method="get">
-    <label for="desde">Desde</label>
-    <input id="desde" name="desde" type="date" value="@Model.Desde?.ToString("yyyy-MM-dd")" />
-    <label for="hasta">Hasta</label>
-    <input id="hasta" name="hasta" type="date" value="@Model.Hasta?.ToString("yyyy-MM-dd")" />
-    <button type="submit">Buscar</button>
-</form>
+    <form asp-action="AlquileresVigentes" method="get" class="card card-body mb-4">
+        <div class="row g-3 align-items-end">
+            <div class="col-md-4">
+                <label for="desde" class="form-label">Desde</label>
+                <input id="desde" name="desde" type="date" class="form-control" value="@Model.Desde?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-4">
+                <label for="hasta" class="form-label">Hasta</label>
+                <input id="hasta" name="hasta" type="date" class="form-control" value="@Model.Hasta?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-auto">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+            </div>
+        </div>
+    </form>
 
-@if (!string.IsNullOrEmpty(Model.Error))
-{
-    <p class="text-danger">@Model.Error</p>
-}
-
-@if (Model.Resultado is not null)
-{
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Cliente</th>
-                <th>Vehículo</th>
-                <th>Entrega prevista</th>
-                <th>Devolución prevista</th>
-                <th>Estado</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var alquiler in Model.Resultado.Elementos)
-            {
-                <tr>
-                    <td>@alquiler.Cliente?.Apellido, @alquiler.Cliente?.Nombre</td>
-                    <td>@alquiler.Vehiculo?.Patente - @alquiler.Vehiculo?.Marca @alquiler.Vehiculo?.Modelo</td>
-                    <td>@alquiler.EntregaPrevista.ToString("d")</td>
-                    <td>@alquiler.DevolucionPrevista.ToString("d")</td>
-                    <td>@alquiler.Estado</td>
-                </tr>
-            }
-        </tbody>
-    </table>
-
-    <p>@Model.Resultado.TotalRegistros alquiler(es)</p>
-    @if (Model.Resultado.Pagina > 1)
+    @if (!string.IsNullOrEmpty(Model.Error))
     {
-        <a asp-action="AlquileresVigentes"
-           asp-route-desde="@Model.Desde?.ToString("yyyy-MM-dd")"
-           asp-route-hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
-           asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+        <div class="alert alert-danger" role="alert">@Model.Error</div>
     }
-    <span>Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
-    @if (Model.Resultado.Pagina < totalPaginas)
+
+    @if (Model.Resultado is not null)
     {
-        <a asp-action="AlquileresVigentes"
-           asp-route-desde="@Model.Desde?.ToString("yyyy-MM-dd")"
-           asp-route-hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
-           asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+        <div class="table-responsive">
+            <table class="table table-striped table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Cliente</th>
+                        <th>Vehículo</th>
+                        <th>Entrega prevista</th>
+                        <th>Devolución prevista</th>
+                        <th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var alquiler in Model.Resultado.Elementos)
+                    {
+                        <tr>
+                            <td>@alquiler.Cliente?.Apellido, @alquiler.Cliente?.Nombre</td>
+                            <td>@alquiler.Vehiculo?.Patente - @alquiler.Vehiculo?.Marca @alquiler.Vehiculo?.Modelo</td>
+                            <td>@alquiler.EntregaPrevista.ToString("d")</td>
+                            <td>@alquiler.DevolucionPrevista.ToString("d")</td>
+                            <td>@alquiler.Estado</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="d-flex flex-wrap align-items-center gap-2">
+            <span class="text-muted me-auto">@Model.Resultado.TotalRegistros alquiler(es)</span>
+            <nav aria-label="Paginación de alquileres vigentes">
+                <ul class="pagination pagination-sm mb-0">
+                    @if (Model.Resultado.Pagina > 1)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="AlquileresVigentes"
+                               asp-route-desde="@Model.Desde?.ToString("yyyy-MM-dd")"
+                               asp-route-hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
+                               asp-route-pagina="@(Model.Resultado.Pagina - 1)">Anterior</a>
+                        </li>
+                    }
+                    <li class="page-item disabled" aria-current="page">
+                        <span class="page-link">Página @Model.Resultado.Pagina de @Math.Max(1, totalPaginas)</span>
+                    </li>
+                    @if (Model.Resultado.Pagina < totalPaginas)
+                    {
+                        <li class="page-item">
+                            <a class="page-link" asp-action="AlquileresVigentes"
+                               asp-route-desde="@Model.Desde?.ToString("yyyy-MM-dd")"
+                               asp-route-hasta="@Model.Hasta?.ToString("yyyy-MM-dd")"
+                               asp-route-pagina="@(Model.Resultado.Pagina + 1)">Siguiente</a>
+                        </li>
+                    }
+                </ul>
+            </nav>
+        </div>
     }
 }
