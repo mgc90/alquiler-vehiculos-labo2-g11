@@ -7,8 +7,8 @@ public interface IAlquilerRepository : IWriteRepository<Alquiler>
 {
     Task<ResultadoPaginado<Alquiler>> BuscarAsync(
         EstadoAlquiler? estado,
-        int? clienteId,
-        int? vehiculoId,
+        string? cliente,
+        string? vehiculo,
         int pagina,
         int tamanioPagina);
 

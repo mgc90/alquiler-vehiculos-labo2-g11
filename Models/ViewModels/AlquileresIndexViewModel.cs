@@ -6,9 +6,9 @@ public class AlquileresIndexViewModel
 {
     public EstadoAlquiler? Estado { get; set; }
 
-    public int? ClienteId { get; set; }
+    public string? Cliente { get; set; }
 
-    public int? VehiculoId { get; set; }
+    public string? Vehiculo { get; set; }
 
     public ResultadoPaginado<Alquiler> Resultado { get; set; } =
         new(Array.Empty<Alquiler>(), 0, 1, 10);

@@ -176,19 +176,37 @@ public class VehiculoRepository : IVehiculoRepository
             throw new ArgumentException("La fecha hasta no puede ser anterior a la fecha desde.");
         }
 
+        var desdeFecha = desde.Date;
+        var hastaFecha = hasta.Date.AddDays(1);
+
+        var conteos = _context.Alquileres
+            .Where(alquiler => alquiler.Estado != EstadoAlquiler.Cancelado
+                && alquiler.EntregaPrevista >= desdeFecha
+                && alquiler.EntregaPrevista < hastaFecha)
+            .GroupBy(alquiler => alquiler.VehiculoId)
+            .Select(grupo => new { VehiculoId = grupo.Key, Cantidad = grupo.Count() });
+
         var consulta = _context.Vehiculos
             .AsNoTracking()
-            .Include(vehiculo => vehiculo.CategoriaVehiculo)
-            .Select(vehiculo => new VehiculoPopular(
-                vehiculo,
-                _context.Alquileres.Count(alquiler =>
-                    alquiler.VehiculoId == vehiculo.Id
-                    && alquiler.Estado != EstadoAlquiler.Cancelado
-                    && alquiler.EntregaPrevista >= desde.Date
-                    && alquiler.EntregaPrevista < hasta.Date.AddDays(1))))
-            .Where(item => item.CantidadAlquileres > 0)
-            .OrderByDescending(item => item.CantidadAlquileres)
-            .ThenBy(item => item.Vehiculo.Patente);
+            .Join(conteos,
+                vehiculo => vehiculo.Id,
+                conteo => conteo.VehiculoId,
+                (vehiculo, conteo) => new
+                {
+                    vehiculo.Patente,
+                    vehiculo.Marca,
+                    vehiculo.Modelo,
+                    Categoria = vehiculo.CategoriaVehiculo!.Nombre,
+                    conteo.Cantidad
+                })
+            .OrderByDescending(item => item.Cantidad)
+            .ThenBy(item => item.Patente)
+            .Select(item => new VehiculoPopular(
+                item.Patente,
+                item.Marca,
+                item.Modelo,
+                item.Categoria,
+                item.Cantidad));
 
         return await Paginacion.CrearResultadoAsync(consulta, pagina, tamanioPagina);
     }

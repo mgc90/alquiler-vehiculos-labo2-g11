@@ -59,15 +59,17 @@
         </div>
 
         <div class="col-md-3">
-            <label class="form-label" for="clienteId">Cliente (ID)</label>
-            <input id="clienteId" name="clienteId" type="number" min="1"
-                   value="@Model.ClienteId" class="form-control" />
+            <label class="form-label" for="cliente">Cliente</label>
+            <input id="cliente" name="cliente" type="text"
+                   value="@Model.Cliente" class="form-control"
+                   placeholder="Nombre, apellido" />
         </div>
 
         <div class="col-md-3">
-            <label class="form-label" for="vehiculoId">Vehículo (ID)</label>
-            <input id="vehiculoId" name="vehiculoId" type="number" min="1"
-                   value="@Model.VehiculoId" class="form-control" />
+            <label class="form-label" for="vehiculo">Vehículo</label>
+            <input id="vehiculo" name="vehiculo" type="text"
+                   value="@Model.Vehiculo" class="form-control"
+                   placeholder="Marca, modelo" />
         </div>
 
         <div class="col-md-3 d-flex gap-2">
@@ -164,8 +166,8 @@ else
                 <a class="page-link"
                    asp-action="Index"
                    asp-route-estado="@Model.Estado"
-                   asp-route-clienteId="@Model.ClienteId"
-                   asp-route-vehiculoId="@Model.VehiculoId"
+                   asp-route-cliente="@Model.Cliente"
+                   asp-route-vehiculo="@Model.Vehiculo"
                    asp-route-pagina="@(paginaActual - 1)">Anterior</a>
             </li>
 
@@ -180,8 +182,8 @@ else
                 <a class="page-link"
                    asp-action="Index"
                    asp-route-estado="@Model.Estado"
-                   asp-route-clienteId="@Model.ClienteId"
-                   asp-route-vehiculoId="@Model.VehiculoId"
+                   asp-route-cliente="@Model.Cliente"
+                   asp-route-vehiculo="@Model.Vehiculo"
                    asp-route-pagina="@(paginaActual + 1)">Siguiente</a>
             </li>
         </ul>

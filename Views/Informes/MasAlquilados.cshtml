@@ -12,10 +12,10 @@
             @foreach (var item in Model.Resultado.Elementos)
             {
                 <tr>
-                    <td>@item.Vehiculo.Patente</td>
-                    <td>@item.Vehiculo.Marca</td>
-                    <td>@item.Vehiculo.Modelo</td>
-                    <td>@item.Vehiculo.CategoriaVehiculo?.Nombre</td>
+                    <td>@item.Patente</td>
+                    <td>@item.Marca</td>
+                    <td>@item.Modelo</td>
+                    <td>@item.Categoria</td>
                     <td>@item.CantidadAlquileres</td>
                 </tr>
             }

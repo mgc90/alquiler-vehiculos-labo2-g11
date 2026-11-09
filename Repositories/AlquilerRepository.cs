@@ -98,16 +98,20 @@ public class AlquilerRepository : IAlquilerRepository
 
     public Task<ResultadoPaginado<Alquiler>> BuscarAsync(
         EstadoAlquiler? estado,
-        int? clienteId,
-        int? vehiculoId,
+        string? cliente,
+        string? vehiculo,
         int pagina,
         int tamanioPagina)
     {
         var consulta = CrearConsultaBase()
             .Include(alquiler => alquiler.Pagos)
             .Where(alquiler => estado == null || alquiler.Estado == estado)
-            .Where(alquiler => clienteId == null || alquiler.ClienteId == clienteId)
-            .Where(alquiler => vehiculoId == null || alquiler.VehiculoId == vehiculoId)
+            .Where(alquiler => cliente == null
+                || alquiler.Cliente!.Nombre.Contains(cliente)
+                || alquiler.Cliente.Apellido.Contains(cliente))
+            .Where(alquiler => vehiculo == null
+                || alquiler.Vehiculo!.Marca.Contains(vehiculo)
+                || alquiler.Vehiculo.Modelo.Contains(vehiculo))
             .OrderByDescending(alquiler => alquiler.EntregaPrevista);
 
         return Paginacion.CrearResultadoAsync(consulta, pagina, tamanioPagina);

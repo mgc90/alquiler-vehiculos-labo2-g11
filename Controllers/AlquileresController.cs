@@ -41,19 +41,22 @@ public class AlquileresController : Controller
     [HttpGet]
     public async Task<IActionResult> Index(
         EstadoAlquiler? estado,
-        int? clienteId,
-        int? vehiculoId,
+        string? cliente,
+        string? vehiculo,
         int pagina = 1)
     {
+        cliente = string.IsNullOrWhiteSpace(cliente) ? null : cliente.Trim();
+        vehiculo = string.IsNullOrWhiteSpace(vehiculo) ? null : vehiculo.Trim();
+
         var modelo = new AlquileresIndexViewModel
         {
             Estado = estado,
-            ClienteId = clienteId,
-            VehiculoId = vehiculoId,
+            Cliente = cliente,
+            Vehiculo = vehiculo,
             Resultado = await _alquilerRepository.BuscarAsync(
                 estado,
-                clienteId,
-                vehiculoId,
+                cliente,
+                vehiculo,
                 pagina,
                 TamPagina)
         };
