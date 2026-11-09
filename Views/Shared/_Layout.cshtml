@@ -11,11 +11,11 @@
     <title>@ViewData["Title"] - Alquiler de vehículos</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/alquiler_vehiculos_g11.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/alquiler-vehiculos-g11.styles.css" asp-append-version="true" />
 </head>
-<body>
+<body class="d-flex flex-column min-vh-100">
     <header>
-        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-3">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light border-bottom mb-2">
             <div class="container-fluid">
                 <a class="navbar-brand" asp-controller="Home" asp-action="Index">Alquiler de vehículos</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#main-navigation"
@@ -59,8 +59,8 @@
             </div>
         </nav>
     </header>
-    <div class="container">
-        <main role="main" class="pb-3">
+    <div class="container-fluid px-5  d-flex flex-column flex-grow-1">
+        <main role="main" class="px-4 rounded-4 @(ViewData["MainSinFondo"] is true ? "d-flex flex-column flex-grow-1" : "")">
             @RenderBody()
         </main>
     </div>

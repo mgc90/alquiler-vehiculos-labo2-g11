@@ -1,5 +1,94 @@
+@using Microsoft.AspNetCore.Identity
+@inject UserManager<ApplicationUser> UserManager
 @{
     ViewData["Title"] = "Inicio";
+    var usuarioActual = await UserManager.GetUserAsync(User);
 }
 
-<h1 class="display-6 mb-3">Inicio</h1>
+<h1 class="display-6 mb-4">Hola, @usuarioActual?.Nombre @usuarioActual?.Apellido</h1>
+
+<div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-3 g-3">
+    <div class="col">
+        <a asp-controller="Clientes" asp-action="Index"
+           class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+            <div class="card-body">
+                <h2 class="h5 mb-0">Clientes</h2>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a asp-controller="Alquileres" asp-action="Index"
+           class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+            <div class="card-body">
+                <h2 class="h5 mb-0">Alquileres</h2>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a asp-controller="Pagos" asp-action="Index"
+           class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+            <div class="card-body">
+                <h2 class="h5 mb-0">Pagos</h2>
+            </div>
+        </a>
+    </div>
+
+    <div class="col">
+        <a asp-controller="Informes" asp-action="Index"
+           class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+            <div class="card-body">
+                <h2 class="h5 mb-0">Informes</h2>
+            </div>
+        </a>
+    </div>
+
+    @if (User.IsInRole("Administrador"))
+    {
+        <div class="col">
+            <a asp-controller="CategoriasVehiculo" asp-action="Index"
+               class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+                <div class="card-body">
+                    <h2 class="h5 mb-0">Categorías</h2>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a asp-controller="Vehiculos" asp-action="Index"
+               class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+                <div class="card-body">
+                    <h2 class="h5 mb-0">Vehículos</h2>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a asp-controller="Usuarios" asp-action="Index"
+               class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+                <div class="card-body">
+                    <h2 class="h5 mb-0">Usuarios</h2>
+                </div>
+            </a>
+        </div>
+
+        <div class="col">
+            <a asp-controller="Auditoria" asp-action="Index"
+               class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+                <div class="card-body">
+                    <h2 class="h5 mb-0">Auditoría</h2>
+                </div>
+            </a>
+        </div>
+    }
+
+    <div class="col">
+        <a asp-controller="Perfil" asp-action="Index"
+           class="card h-100 border-0 shadow-sm rounded-4 text-decoration-none text-body text-center">
+            <div class="card-body">
+                <h2 class="h5 mb-0">Perfil</h2>
+            </div>
+        </a>
+    </div>
+</div>

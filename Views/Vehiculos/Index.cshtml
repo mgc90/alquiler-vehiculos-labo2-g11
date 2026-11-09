@@ -20,7 +20,7 @@
                        v-model="termino"
                        v-on:keydown.enter.prevent="buscar(1)"
                        placeholder="Patente, marca o modelo" />
-                <button type="button" class="btn btn-outline-secondary" v-on:click="buscar(1)">Buscar</button>
+                <button type="button" class="btn btn-primary" v-on:click="buscar(1)">Buscar</button>
             </div>
         </div>
         <div class="col-md-7 text-end g-2">
@@ -82,15 +82,23 @@
         </tbody>
     </table>
 
-    <div class="d-flex align-items-center gap-2">
-        <button type="button" class="btn btn-sm btn-outline-secondary"
-                v-bind:disabled="pagina <= 1"
-                v-on:click="buscar(pagina - 1)">Anterior</button>
-        <span>Página {{ pagina }} de {{ totalPaginas }} — {{ totalRegistros }} vehículo(s)</span>
-        <button type="button" class="btn btn-sm btn-outline-secondary"
-                v-bind:disabled="pagina >= totalPaginas"
-                v-on:click="buscar(pagina + 1)">Siguiente</button>
-    </div>
+    <nav aria-label="Paginación de vehículos">
+        <ul class="pagination justify-content-center">
+            <li class="page-item" v-bind:class="{ disabled: pagina <= 1 }">
+                <button type="button" class="page-link" v-bind:disabled="pagina <= 1"
+                        v-on:click="buscar(pagina - 1)">Anterior</button>
+            </li>
+
+            <li class="page-item disabled">
+                <span class="page-link">Página {{ pagina }} de {{ totalPaginas }} ({{ totalRegistros }} vehículos)</span>
+            </li>
+
+            <li class="page-item" v-bind:class="{ disabled: pagina >= totalPaginas }">
+                <button type="button" class="page-link" v-bind:disabled="pagina >= totalPaginas"
+                        v-on:click="buscar(pagina + 1)">Siguiente</button>
+            </li>
+        </ul>
+    </nav>
 
     <div class="modal fade" id="modalVehiculo" tabindex="-1" aria-labelledby="tituloModalVehiculo" aria-hidden="true">
         <div class="modal-dialog">

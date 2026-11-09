@@ -8,10 +8,9 @@
     <a asp-action="Create" class="btn btn-primary">Crear cliente</a>
 </div>
 
-<div class="card shadow-sm">
     <div class="table-responsive">
-        <table class="table table-striped table-hover align-middle mb-0">
-            <thead class="table-light">
+        <table class="table table-striped table-hover align-middle">
+            <thead>
                 <tr>
                     <th>Apellido y nombre</th>
                     <th>DNI</th>
@@ -53,24 +52,30 @@
             </tbody>
         </table>
     </div>
-</div>
 
 @{
-    var totalPaginas = (int)Math.Ceiling((double)Model.TotalRegistros / Model.TamanioPagina);
+    var totalPaginas = Math.Max(
+        1,
+        (int)Math.Ceiling(
+            Model.TotalRegistros / (double)Model.TamanioPagina));
+    var paginaActual = Model.Pagina;
 }
 
-<div class="d-flex flex-wrap align-items-center gap-2 mt-3">
-    <span class="text-muted me-auto">Página @Model.Pagina de @(totalPaginas == 0 ? 1 : totalPaginas) — @Model.TotalRegistros cliente(s)</span>
-    <nav aria-label="Paginación de clientes">
-        <ul class="pagination pagination-sm mb-0">
-            @if (Model.Pagina > 1)
-            {
-                <li class="page-item"><a class="page-link" asp-action="Index" asp-route-pagina="@(Model.Pagina - 1)">Anterior</a></li>
-            }
-            @if (Model.Pagina < totalPaginas)
-            {
-                <li class="page-item"><a class="page-link" asp-action="Index" asp-route-pagina="@(Model.Pagina + 1)">Siguiente</a></li>
-            }
-        </ul>
-    </nav>
-</div>
+<nav aria-label="Paginación de clientes">
+    <ul class="pagination justify-content-center">
+        <li class="page-item @(paginaActual <= 1 ? "disabled" : string.Empty)">
+            <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual - 1)">Anterior</a>
+        </li>
+
+        <li class="page-item disabled">
+            <span class="page-link">
+                Página @paginaActual de @totalPaginas
+                (@Model.TotalRegistros registros)
+            </span>
+        </li>
+
+        <li class="page-item @(paginaActual >= totalPaginas ? "disabled" : string.Empty)">
+            <a class="page-link" asp-action="Index" asp-route-pagina="@(paginaActual + 1)">Siguiente</a>
+        </li>
+    </ul>
+</nav>

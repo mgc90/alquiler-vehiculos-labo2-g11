@@ -20,12 +20,12 @@
     var paginaActual = Model.Resultado.Pagina;
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="d-flex justify-content-between align-items-center mb-2">
     <h1>Alquileres</h1>
     <div class="d-flex justify-content-end gap-3">
         <a asp-action="NuevaReserva" class="btn btn-primary">Nueva reserva</a>
         <a asp-action="Entregar" class="btn btn-success">Entregar vehículo</a>
-        <a asp-action="Devolver" class="btn btn-solid theme-info">Devolver vehículo</a>
+        <a asp-action="Devolver" class="btn btn-info">Devolver vehículo</a>
     </div>
 </div>
 
@@ -45,8 +45,8 @@
     </div>
 }
 
-<form method="get" class="card mb-3">
-    <div class="card-body row g-3 align-items-end">
+<form method="get" class="card ">
+    <div class="card-body row m-0 p-1 g-1 align-items-end">
         <div class="col-md-3">
             <label class="form-label" for="estado">Estado</label>
             <select id="estado" name="estado" class="form-select">
@@ -84,7 +84,7 @@
 else
 {
     <div class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-striped align-middle mb-1">
             <thead>
                 <tr>
                     <th>N.º</th>
@@ -159,7 +159,7 @@ else
     </div>
 
     <nav aria-label="Paginación de alquileres">
-        <ul class="pagination justify-content-center">
+        <ul class="pagination pagination-sm justify-content-center">
             <li class="page-item @(paginaActual <= 1 ? "disabled" : string.Empty)">
                 <a class="page-link"
                    asp-action="Index"

@@ -1,27 +1,35 @@
 @model LoginViewModel
 @{
     ViewData["Title"] = "Ingresar";
+    ViewData["MainSinFondo"] = true;
 }
 
-<h1>Ingresar</h1>
+<div class="login-page">
+    <div class="col-11 col-sm-8 col-md-6 col-lg-4">
+        <div class="card shadow border-0">
+            <div class="card-body p-4">
+                <h1 class="h3 text-center mb-4">Ingresar</h1>
 
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Login" method="post">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-            <input type="hidden" name="returnUrl" value="@Context.Request.Query["ReturnUrl"]" />
-            <div class="mb-3">
-                <label asp-for="Email" class="form-label">Email</label>
-                <input asp-for="Email" class="form-control" />
-                <span asp-validation-for="Email" class="text-danger"></span>
+                <form asp-action="Login" method="post">
+                    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+                    <input type="hidden" name="returnUrl" value="@Context.Request.Query["ReturnUrl"]" />
+
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" class="form-control" />
+                        <span asp-validation-for="Email" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Password" class="form-label">Contraseña</label>
+                        <input asp-for="Password" class="form-control" />
+                        <span asp-validation-for="Password" class="text-danger"></span>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">Ingresar</button>
+                </form>
             </div>
-            <div class="mb-3">
-                <label asp-for="Password" class="form-label">Contraseña</label>
-                <input asp-for="Password" class="form-control" />
-                <span asp-validation-for="Password" class="text-danger"></span>
-            </div>
-            <button type="submit" class="btn btn-primary">Ingresar</button>
-        </form>
+        </div>
     </div>
 </div>
 
